@@ -1,0 +1,21 @@
+{
+  "name": "stamak-tools",
+  "version": "1.0.0",
+  "description": "LINE sticker maker pipeline (crop -> AI bg removal -> finalize)",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "crop": "node --env-file-if-exists=../.env crop.mjs",
+    "process": "node postprocess.mjs",
+    "apply-rename": "node apply-rename.mjs",
+    "build": "npm run crop && npm run process && npm run apply-rename",
+    "clear": "rm -rf ../stickers .cache",
+    "clear:final": "rm -rf ../stickers",
+    "clear:cache": "rm -rf .cache",
+    "retry": "npm run clear && npm run build",
+    "rebuild:final": "npm run clear:final && npm run process"
+  },
+  "dependencies": {
+    "sharp": "^0.34.5"
+  }
+}

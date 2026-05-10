@@ -1,0 +1,12 @@
+node_modules/
+.cache/
+dist/
+*.log
+.DS_Store
+.env
+.env.local
+
+# Python venv (rembg) — large, recreated on demand via tools/py/setup
+tools/py/venv/
+__pycache__/
+*.pyc
