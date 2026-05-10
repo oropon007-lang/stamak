@@ -26,7 +26,8 @@
       ],
       "main": "main.png",
       "tab": "tab.png",
-      "source": "_source.png"
+      "source": "_source.png",
+      "complete": false
     },
     {
       "name": "ゆるタイガー_1",
@@ -50,7 +51,8 @@
       ],
       "main": "main.png",
       "tab": "tab.png",
-      "source": "_source.jpg"
+      "source": "_source.jpg",
+      "complete": false
     },
     {
       "name": "ゆるタイガー_2",
@@ -74,7 +76,8 @@
       ],
       "main": "main.png",
       "tab": "tab.png",
-      "source": "_source.jpg"
+      "source": "_source.jpg",
+      "complete": false
     },
     {
       "name": "ゆるタイガー_3",
@@ -98,7 +101,8 @@
       ],
       "main": "main.png",
       "tab": "tab.png",
-      "source": "_source.jpg"
+      "source": "_source.jpg",
+      "complete": false
     },
     {
       "name": "ゴブリン_1",
@@ -130,7 +134,8 @@
       ],
       "main": "main.png",
       "tab": "tab.png",
-      "source": "_source.jpg"
+      "source": "_source.jpg",
+      "complete": false
     },
     {
       "name": "ゴブリン_2",
@@ -162,7 +167,8 @@
       ],
       "main": "main.png",
       "tab": "tab.png",
-      "source": "_source.jpg"
+      "source": "_source.jpg",
+      "complete": false
     },
     {
       "name": "タイガタウルス_1",
@@ -186,7 +192,8 @@
       ],
       "main": "main.png",
       "tab": "tab.png",
-      "source": "_source.jpg"
+      "source": "_source.jpg",
+      "complete": false
     },
     {
       "name": "タイガタウルス_2",
@@ -210,7 +217,8 @@
       ],
       "main": "main.png",
       "tab": "tab.png",
-      "source": "_source.jpg"
+      "source": "_source.jpg",
+      "complete": false
     },
     {
       "name": "ドット万理沙",
@@ -228,7 +236,8 @@
       ],
       "main": "main.png",
       "tab": "tab.png",
-      "source": "_source.png"
+      "source": "_source.png",
+      "complete": true
     },
     {
       "name": "ドット霊夢",
@@ -246,7 +255,8 @@
       ],
       "main": "main.png",
       "tab": "tab.png",
-      "source": "_source.png"
+      "source": "_source.png",
+      "complete": true
     },
     {
       "name": "下半身タイガー_1",
@@ -270,7 +280,8 @@
       ],
       "main": "main.png",
       "tab": "tab.png",
-      "source": "_source.jpg"
+      "source": "_source.jpg",
+      "complete": false
     },
     {
       "name": "下半身タイガー_2",
@@ -294,7 +305,8 @@
       ],
       "main": "main.png",
       "tab": "tab.png",
-      "source": "_source.jpg"
+      "source": "_source.jpg",
+      "complete": false
     },
     {
       "name": "残業",
@@ -311,7 +323,8 @@
       ],
       "main": "main.png",
       "tab": "tab.png",
-      "source": "_source.jpg"
+      "source": "_source.jpg",
+      "complete": false
     },
     {
       "name": "目の錯覚",
@@ -328,7 +341,8 @@
       ],
       "main": "main.png",
       "tab": "tab.png",
-      "source": "_source.jpg"
+      "source": "_source.jpg",
+      "complete": false
     },
     {
       "name": "絶景",
@@ -345,7 +359,8 @@
       ],
       "main": "main.png",
       "tab": "tab.png",
-      "source": "_source.jpg"
+      "source": "_source.jpg",
+      "complete": false
     },
     {
       "name": "遅刻には神罰を下す",
@@ -362,7 +377,8 @@
       ],
       "main": "main.png",
       "tab": "tab.png",
-      "source": "_source.jpg"
+      "source": "_source.jpg",
+      "complete": false
     }
   ]
 }

@@ -9,6 +9,7 @@ type Sheet = {
   main: string | null;
   tab: string | null;
   source: string | null;
+  complete: boolean;
 };
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -60,7 +61,7 @@ function App() {
     () =>
       sheets.map((s) => ({
         id: s.name,
-        label: s.name,
+        label: s.complete ? `${s.name} ✓` : s.name,
         imageSrc: s.tab ? stickerSrc(s.name, s.tab) : null,
       })),
     [sheets],
@@ -101,11 +102,14 @@ function App() {
 
 
       {sheet && (
-        <main className="main">
+        <main className={`main ${sheet.complete ? "main--complete" : ""}`}>
           <div className="sheet-header">
             {sheet.main && <img className="sheet-cover" src={stickerSrc(sheet.name, sheet.main)} alt="" />}
             <div>
-              <h2>{sheet.name}</h2>
+              <h2>
+                {sheet.name}
+                {sheet.complete && <span className="badge-complete" title="完成: パイプラインで再処理されません">✓ 完成</span>}
+              </h2>
               <p>{sheet.stickers.length} stickers</p>
             </div>
           </div>

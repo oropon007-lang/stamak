@@ -2,6 +2,13 @@ import sharp from "sharp";
 import { readdir, mkdir, copyFile } from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
+import { SHEETS, sheetBasename } from "./sheets.config.mjs";
+
+// 完成扱いのシートは「触らない」。crop が cache に置かない設計のため通常は
+// この check に到達しないが、過去の cache が残っているケースを保険として弾く。
+const COMPLETE_SHEETS = new Set(
+  SHEETS.filter(s => s.complete).map(s => sheetBasename(s))
+);
 
 const ROOT = path.resolve(import.meta.dirname, "..");
 const SRC = path.resolve(import.meta.dirname, ".cache", "cropped");
@@ -21,6 +28,10 @@ const SHEET_OPTS = {
   "遅刻には神罰を下す": { engine: "ai", model: "birefnet-general", alphaT: 30 },
   "残業":         { engine: "ai", model: "birefnet-general", alphaT: 30 },
   "絶景":         { engine: "ai", model: "birefnet-general", alphaT: 30 },
+  // birefnet が一番マシ (一部キャプションを保持)。isnet-anime は全消し、isnet-general も
+  // 全消しで使えない。キャプション完全保持には engine:"none" (白背景維持) が必要だが
+  // LINE 青背景に白浮きが目立つのでトレードオフ。
+  "きゃわいいタイガタウルス": { engine: "ai", model: "birefnet-general", alphaT: 30 },
 };
 const DEFAULT_OPTS = { engine: "ai", model: "isnet-general-use", alphaT: 128, bg: "white" };
 
@@ -103,6 +114,10 @@ await mkdir(DST, { recursive: true });
 const subdirs = (await readdir(SRC, { withFileTypes: true })).filter(d => d.isDirectory());
 let total = 0;
 for (const d of subdirs) {
+  if (COMPLETE_SHEETS.has(d.name)) {
+    console.log(`${d.name}: SKIP (complete)`);
+    continue;
+  }
   const opts = { ...DEFAULT_OPTS, ...(SHEET_OPTS[d.name] || {}) };
   const inDir = path.join(SRC, d.name);
   const outDir = path.join(DST, d.name);
