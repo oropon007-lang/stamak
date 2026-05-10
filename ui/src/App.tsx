@@ -151,14 +151,29 @@ function App() {
 
           <div className="grid">
             {sheet.stickers.map((file) => (
-              <button
-                key={file}
-                className="sticker"
-                onClick={() => setZoomed({ sheet: sheet.name, file })}
-                title={file}
-              >
-                <img src={stickerSrc(sheet.name, file)} alt={file} loading="lazy" />
-              </button>
+              <div key={file} className="sticker-tile">
+                <button
+                  className="sticker"
+                  onClick={() => setZoomed({ sheet: sheet.name, file })}
+                  title={file}
+                >
+                  <img src={stickerSrc(sheet.name, file)} alt={file} loading="lazy" />
+                </button>
+                <a
+                  className="sticker__download"
+                  href={stickerSrc(sheet.name, file)}
+                  download={file}
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label={`${file} をダウンロード`}
+                  title="ダウンロード"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M12 4v12" />
+                    <polyline points="6 12 12 18 18 12" />
+                    <line x1="4" y1="20" x2="20" y2="20" />
+                  </svg>
+                </a>
+              </div>
             ))}
           </div>
         </main>
