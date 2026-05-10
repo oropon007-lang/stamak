@@ -1,0 +1,10 @@
+{
+  "name": "stamak-root",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Workspace root: hosts peer deps so packages/ui-catalog can resolve them via node module walk-up.",
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.6.0"
+  }
+}

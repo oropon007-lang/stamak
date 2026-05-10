@@ -59,8 +59,8 @@ body {
 }
 .tab:hover { background: var(--panel-hover); }
 .tab--active { background: var(--accent-bg); border-color: var(--accent); color: var(--text); }
-.tab img { width: 64px; height: 50px; object-fit: contain; background: var(--panel); }
-.tab--active img { background: #fff; }
+.tab img { width: 64px; height: 50px; object-fit: contain; background: var(--sticker-bg, var(--panel)); }
+.tab--active img { background: var(--sticker-bg, #fff); }
 .tab__name { width: 100%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .main {
@@ -76,7 +76,7 @@ body {
   width: 96px;
   height: 96px;
   object-fit: contain;
-  background: var(--bg);
+  background: var(--sticker-bg, var(--bg));
   border-radius: 12px;
   border: 1px solid var(--border);
 }
@@ -89,18 +89,18 @@ body {
   gap: 8px;
 }
 .sticker {
-  background: var(--bg);
+  background: var(--sticker-bg, var(--bg));
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 6px;
   aspect-ratio: 1;
   cursor: pointer;
-  transition: transform 120ms, border-color 120ms, background 120ms;
+  transition: transform 120ms, border-color 120ms, filter 120ms;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.sticker:hover { border-color: var(--accent); background: #fff; transform: translateY(-1px); }
+.sticker:hover { border-color: var(--accent); transform: translateY(-1px); filter: brightness(1.04); }
 .sticker img { max-width: 100%; max-height: 100%; object-fit: contain; }
 
 .zoom {
@@ -116,14 +116,117 @@ body {
   cursor: pointer;
   z-index: 100;
 }
-.zoom img {
+.zoom__frame {
+  background: var(--sticker-bg, rgba(255, 255, 255, 0.06));
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.zoom__frame img {
   max-width: min(80vw, 480px);
   max-height: 70vh;
   object-fit: contain;
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 8px;
+  display: block;
 }
 .zoom__caption { color: rgba(255, 255, 255, 0.85); font-size: 13px; }
+
+.bg-picker {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.bg-picker__label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+.bg-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 4px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-muted);
+  transition: border-color 120ms, color 120ms, background 120ms;
+}
+.bg-chip:hover { background: var(--panel-hover); }
+.bg-chip--active { border-color: var(--accent); color: var(--text); background: var(--accent-bg); }
+.bg-chip__swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background-size: 12px 12px;
+  flex: 0 0 auto;
+}
+.bg-chip__name { white-space: nowrap; }
+
+.sheet-meta {
+  margin: 4px 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+.sheet-meta > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--text-muted);
+  user-select: none;
+}
+.sheet-meta > summary::-webkit-details-marker { display: none; }
+.sheet-meta > summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 6px;
+  transition: transform 120ms;
+}
+.sheet-meta[open] > summary::before { transform: rotate(90deg); }
+.sheet-meta__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 4px 14px 14px;
+}
+.meta-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  background: var(--sticker-bg, var(--bg));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 120ms;
+}
+.meta-tile:hover { border-color: var(--accent); }
+.meta-tile img {
+  max-width: 96px;
+  max-height: 96px;
+  object-fit: contain;
+}
+.meta-tile--wide img {
+  max-width: 240px;
+  max-height: 160px;
+}
+.meta-tile__label {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.meta-tile__label small { font-size: 10px; opacity: 0.7; }
 
 @media (max-width: 600px) {
   .app { padding: 16px 8px 64px; }

@@ -8,7 +8,7 @@ LINE スタンプ作成パイプライン + プレビュー UI。新セッショ
 |---|---|---|
 | 1. パイプライン構築 | ✅ 完了 | 切り出し → AI背景除去 → 仕上げ → 207枚出力 |
 | 2. UI 構築 | ✅ 完了 | React + Vite + TS、LINE 風ギャラリー (`ui/`) |
-| 3. GitHub Pages デプロイ | 🟡 設定済・未 push | Actions workflow 作成済、ユーザーが GitHub に push すれば自動デプロイ |
+| 3. GitHub Pages デプロイ | ✅ 完了 | https://oropon007-lang.github.io/stamak/ で公開中 (oropon007-lang/stamak) |
 
 ## ディレクトリ構成
 
@@ -93,22 +93,12 @@ npm run preview            # http://localhost:4173 (本番ビルドの確認)
 
 ## まだ残ってるタスク
 
-### 必須（Phase 3 完了）
+### Phase 3 (完了)
 
-1. **git 初回コミット** (現在 master ブランチ、全ファイル stage 済)
-   ```bash
-   cd ~/projects/stamak
-   git commit -m "Initial commit: stamak pipeline + UI"
-   git branch -M main
-   ```
-2. **GitHub リポジトリ作成 + push**
-   ```bash
-   # GitHub で stamak リポジトリを作成 (Public なら GitHub Pages 無料)
-   git remote add origin git@github.com:<USERNAME>/stamak.git
-   git push -u origin main
-   ```
-3. **GitHub 側で Pages 有効化**: Settings → Pages → Source: "GitHub Actions"
-4. push 後 1〜2分で `https://<USERNAME>.github.io/stamak/` に公開
+- ✅ 初回コミット (`159d7b8`、`main` ブランチ)
+- ✅ `oropon007-lang/stamak` (Public) に push
+- ✅ GitHub Pages 有効化 (Actions ソース)
+- ✅ デプロイ成功、https://oropon007-lang.github.io/stamak/ で公開中
 
 ### あると嬉しい (任意)
 

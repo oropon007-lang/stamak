@@ -1,3 +1,11 @@
+@import "tailwindcss";
+@import "@ui-catalog/core/styles/tokens.css";
+
+/* Tailwind 4: JIT scan paths.
+ * stamak/ui の src/ だけスキャン。ui-catalog の中のコンポーネントを取り込んだ
+ * 時に、その import 先ファイル単位でこの list を追加する想定。 */
+@source "./";
+
 /* Reset baseline; App.css owns the gallery look. */
 html, body { margin: 0; padding: 0; }
 button { font: inherit; color: inherit; }

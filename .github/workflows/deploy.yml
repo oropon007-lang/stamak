@@ -24,9 +24,14 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: ui/package-lock.json
+          cache-dependency-path: |
+            package-lock.json
+            ui/package-lock.json
 
-      - name: Install
+      - name: Install root deps (peer deps for packages/ui-catalog)
+        run: npm install --no-package-lock
+
+      - name: Install ui deps
         working-directory: ui
         run: npm ci
 

@@ -19,7 +19,13 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+
+    "paths": {
+      "@ui-catalog/core": ["../packages/ui-catalog/index.ts"],
+      "@ui-catalog/core/styles/*": ["../packages/ui-catalog/core/styles/*"],
+      "@ui-catalog/core/*": ["../packages/ui-catalog/core/*/index.ts"]
+    }
   },
   "include": ["src"]
 }

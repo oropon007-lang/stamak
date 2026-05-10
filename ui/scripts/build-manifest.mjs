@@ -11,10 +11,19 @@ const sheets = [];
 const dirs = (await readdir(STICKERS, { withFileTypes: true })).filter(d => d.isDirectory()).map(d => d.name).sort();
 for (const name of dirs) {
   const files = (await readdir(path.join(STICKERS, name))).sort();
-  const stickers = files.filter(f => f.endsWith(".png") && f !== "main.png" && f !== "tab.png");
+  const stickers = files.filter(
+    f => f.endsWith(".png") && f !== "main.png" && f !== "tab.png" && !f.startsWith("_source."),
+  );
   const hasMain = files.includes("main.png");
   const hasTab = files.includes("tab.png");
-  sheets.push({ name, stickers, main: hasMain ? "main.png" : null, tab: hasTab ? "tab.png" : null });
+  const source = files.find(f => f.startsWith("_source.")) ?? null;
+  sheets.push({
+    name,
+    stickers,
+    main: hasMain ? "main.png" : null,
+    tab: hasTab ? "tab.png" : null,
+    source,
+  });
 }
 
 await writeFile(OUT, JSON.stringify({ sheets }, null, 2));

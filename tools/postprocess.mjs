@@ -1,5 +1,5 @@
 import sharp from "sharp";
-import { readdir, mkdir } from "node:fs/promises";
+import { readdir, mkdir, copyFile } from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
 
@@ -18,7 +18,8 @@ const SHEET_OPTS = {
   "目の錯覚":     { engine: "none" },
   "ドット霊夢":   { engine: "ai", model: "isnet-anime", bg: "green" },
   "ドット万理沙": { engine: "ai", model: "isnet-anime", bg: "green" },
-  "遅刻神":       { engine: "ai", model: "birefnet-general", alphaT: 30 },
+  "遅刻には神罰を下す": { engine: "ai", model: "birefnet-general", alphaT: 30 },
+  "残業":         { engine: "ai", model: "birefnet-general", alphaT: 30 },
   "絶景":         { engine: "ai", model: "birefnet-general", alphaT: 30 },
 };
 const DEFAULT_OPTS = { engine: "ai", model: "isnet-general-use", alphaT: 128, bg: "white" };
@@ -116,7 +117,8 @@ for (const d of subdirs) {
     process.stdout.write(`${d.name}: ${opts.engine}, finalizing... `);
   }
 
-  const files = (await readdir(inDir)).filter(f => f.endsWith(".png")).sort();
+  // _source.* は sticker ではないので除外する。crop が同じディレクトリに置いている。
+  const files = (await readdir(inDir)).filter(f => f.endsWith(".png") && !f.startsWith("_source.")).sort();
   for (const f of files) {
     const dst = path.join(outDir, f);
     if (opts.engine === "ai") {
@@ -135,6 +137,14 @@ for (const d of subdirs) {
     await makeFixedCanvas(mainSrc, path.join(outDir, "main.png"), MAIN_DIM, MAIN_DIM);
     await makeFixedCanvas(tabSrc, path.join(outDir, "tab.png"), TAB_W, TAB_H);
   }
-  console.log(`${files.length} stickers + main + tab`);
+
+  // crop が置いた _source.* (元一枚絵のコピー) を stickers 側に転送する。
+  const cacheEntries = await readdir(inDir);
+  const sourceFile = cacheEntries.find(f => f.startsWith("_source."));
+  if (sourceFile) {
+    await copyFile(path.join(inDir, sourceFile), path.join(outDir, sourceFile));
+  }
+
+  console.log(`${files.length} stickers + main + tab${sourceFile ? " + source" : ""}`);
 }
 console.log(`Total: ${total} stickers -> ${path.relative(ROOT, DST)}/`);
