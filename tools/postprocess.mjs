@@ -459,6 +459,44 @@ async function finalizeSticker(srcPath, dstPath, opts, cropPath) {
   const darkThreshold = ptCfg.darkThreshold ?? 100;
   const satThreshold = ptCfg.satThreshold ?? 40;
   const whiteThreshold = ptCfg.whiteThreshold ?? 240;
+  // 暗ピクセル連結成分の最大サイズ。これ以下のものだけ「テキスト/輪郭」として
+  // 保持対象に、これより大きいものは「背景の暗ブロブ (床、暗い盤面、影等)」として
+  // 復元対象から除外。
+  const maxDarkBlobSize = ptCfg.maxDarkBlobSize ?? 1500;
+
+  // 事前に cropData の暗ピクセル連結成分を構築 (4-connected)。
+  let darkBlobId = null;
+  let darkBlobSizes = null;
+  if (cropData) {
+    const w = info.width, h = info.height, total = w * h;
+    darkBlobId = new Int32Array(total);
+    darkBlobSizes = [0];
+    const isDarkCrop = (idx) => {
+      const ci = idx * 4;
+      return cropData[ci] < darkThreshold && cropData[ci + 1] < darkThreshold && cropData[ci + 2] < darkThreshold;
+    };
+    let nid = 1;
+    for (let i = 0; i < total; i++) {
+      if (darkBlobId[i] !== 0 || !isDarkCrop(i)) continue;
+      const stack = [i];
+      darkBlobId[i] = nid;
+      let size = 0;
+      while (stack.length) {
+        const idx = stack.pop();
+        size++;
+        const y = (idx / w) | 0;
+        const x = idx - y * w;
+        const ns = [x > 0 ? idx - 1 : -1, x < w - 1 ? idx + 1 : -1, y > 0 ? idx - w : -1, y < h - 1 ? idx + w : -1];
+        for (const ni of ns) {
+          if (ni < 0 || darkBlobId[ni] !== 0 || !isDarkCrop(ni)) continue;
+          darkBlobId[ni] = nid;
+          stack.push(ni);
+        }
+      }
+      darkBlobSizes.push(size);
+      nid++;
+    }
+  }
 
   for (let i = 0; i < data.length; i += 4) {
     let a = data[i + 3];
@@ -468,17 +506,17 @@ async function finalizeSticker(srcPath, dstPath, opts, cropPath) {
       if (g > r + 25 && g > b + 25) a = 0;
     }
     if (cropData) {
-      // 元 crop ピクセルを参照して、文字 (暗) / エフェクト (彩度高) を判定。
-      // 該当する場合は alpha と RGB を強制的に元画像値で上書き。
-      // alpha が rembg で 0 だったら復活、255 だったら rembg が改変した RGB
-      // (例: text stroke が灰色化) を元の黒/原色に戻す効果がある。
       const cr = cropData[i], cg = cropData[i + 1], cb = cropData[i + 2];
       const maxC = Math.max(cr, cg, cb);
       const minC = Math.min(cr, cg, cb);
       const isDark = cr < darkThreshold && cg < darkThreshold && cb < darkThreshold;
       const isWhite = minC >= whiteThreshold;
       const isSaturated = !isWhite && (maxC - minC) > satThreshold;
-      if (isDark || isSaturated) {
+      // 暗ピクセルは「小さい連結成分」(= テキスト・キャラ輪郭) だけ復元対象に。
+      // 巨大な暗ブロブ (= 背景の床・暗い機械盤面・大きな影等) は除外。
+      const pixIdx = i >> 2; // bytes -> pixel index
+      const blobOk = !isDark || (darkBlobId && darkBlobSizes[darkBlobId[pixIdx]] <= maxDarkBlobSize);
+      if ((isSaturated || (isDark && blobOk))) {
         data[i] = cr; data[i + 1] = cg; data[i + 2] = cb;
         a = 255;
       }
