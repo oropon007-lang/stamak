@@ -67,7 +67,7 @@ const DEFAULT_OPTS = {
   fillHoles: true,
   outline: { thickness: 4, color: [255, 255, 255] },
   removeFragments: { maxFragmentRatio: 0.15, ignoreLargestN: 2 },
-  keepOnlyNearAnchors: { maxDist: 12 },
+  keepOnlyNearAnchors: { maxDist: 8 },
 };
 
 // LINE sticker spec.
@@ -316,20 +316,22 @@ function removeEdgeFragments(data, w, h, maxFragmentRatio = 0.15, ignoreLargestN
 
 // 外周から到達できない透過領域 (= 内部に出来た「孔」) を opaque に戻す。
 // rembg が「目の白部」「歯の白部」等を背景白と誤判定して透過化する問題への対策。
-function fillInteriorHoles(data, w, h) {
+// maxHoleSize: 1 孔あたりこのピクセル数以下のものだけを埋める。それを超える大きい
+// 「穴」(例: ケーブル束の隙間、背景の大きな隙間) は元の透明のまま残す。デフォルト
+// 800 px 程度なら目・歯・文字内側はカバーしつつ、ケーブル隙間等の大きな空間は
+// 埋めない。
+function fillInteriorHoles(data, w, h, maxHoleSize = 800) {
   const total = w * h;
   const reachable = new Uint8Array(total);
-  const stack = [];
+  let stack = [];
   const seed = (idx) => {
     if (!reachable[idx] && data[idx * 4 + 3] === 0) {
       reachable[idx] = 1;
       stack.push(idx);
     }
   };
-  // 4 辺すべての透過ピクセルを seed
   for (let x = 0; x < w; x++) { seed(x); seed((h - 1) * w + x); }
   for (let y = 0; y < h; y++) { seed(y * w); seed(y * w + (w - 1)); }
-  // BFS で外周から到達可能な透過領域を全て塗る
   while (stack.length) {
     const idx = stack.pop();
     const y = (idx / w) | 0;
@@ -339,12 +341,39 @@ function fillInteriorHoles(data, w, h) {
     if (y > 0) seed(idx - w);
     if (y < h - 1) seed(idx + w);
   }
-  // 透過なのに外周から到達できない = 内部の孔。alpha を 255 に。
+  // 透過 & 外周到達不可なピクセルを「孔」として、サイズで判定:
+  // 小さい孔だけ alpha=255 で埋める。
+  const visited = new Uint8Array(total);
   let filled = 0;
   for (let i = 0; i < total; i++) {
-    if (data[i * 4 + 3] === 0 && !reachable[i]) {
-      data[i * 4 + 3] = 255;
-      filled++;
+    if (visited[i] || reachable[i] || data[i * 4 + 3] !== 0) continue;
+    const hole = [i];
+    visited[i] = 1;
+    const bfs = [i];
+    while (bfs.length) {
+      const idx = bfs.pop();
+      const y = (idx / w) | 0;
+      const x = idx - y * w;
+      const ns = [
+        x > 0 ? idx - 1 : -1,
+        x < w - 1 ? idx + 1 : -1,
+        y > 0 ? idx - w : -1,
+        y < h - 1 ? idx + w : -1,
+      ];
+      for (const ni of ns) {
+        if (ni < 0) continue;
+        if (visited[ni] || reachable[ni]) continue;
+        if (data[ni * 4 + 3] !== 0) continue;
+        visited[ni] = 1;
+        hole.push(ni);
+        bfs.push(ni);
+      }
+    }
+    if (hole.length <= maxHoleSize) {
+      for (const idx of hole) {
+        data[idx * 4 + 3] = 255;
+        filled++;
+      }
     }
   }
   return filled;
