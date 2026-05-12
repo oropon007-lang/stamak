@@ -317,10 +317,11 @@ function removeEdgeFragments(data, w, h, maxFragmentRatio = 0.15, ignoreLargestN
 // 外周から到達できない透過領域 (= 内部に出来た「孔」) を opaque に戻す。
 // rembg が「目の白部」「歯の白部」等を背景白と誤判定して透過化する問題への対策。
 // maxHoleSize: 1 孔あたりこのピクセル数以下のものだけを埋める。それを超える大きい
-// 「穴」(例: ケーブル束の隙間、背景の大きな隙間) は元の透明のまま残す。デフォルト
-// 800 px 程度なら目・歯・文字内側はカバーしつつ、ケーブル隙間等の大きな空間は
-// 埋めない。
-function fillInteriorHoles(data, w, h, maxHoleSize = 800) {
+// 「穴」(例: ケーブル束の隙間、背景の大きな隙間) は元の透明のまま残す。
+// cropData: 元 crop の RGBA。指定があればこちらの RGB を使って孔を埋める
+// (rembg は透過ピクセルの RGB を (0,0,0) に置換するため、そのまま alpha=255 に
+//  すると孔が「黒塗り」で出てしまう)。
+function fillInteriorHoles(data, w, h, maxHoleSize = 800, cropData = null) {
   const total = w * h;
   const reachable = new Uint8Array(total);
   let stack = [];
@@ -371,7 +372,13 @@ function fillInteriorHoles(data, w, h, maxHoleSize = 800) {
     }
     if (hole.length <= maxHoleSize) {
       for (const idx of hole) {
-        data[idx * 4 + 3] = 255;
+        const di = idx * 4;
+        data[di + 3] = 255;
+        if (cropData) {
+          data[di]     = cropData[di];
+          data[di + 1] = cropData[di + 1];
+          data[di + 2] = cropData[di + 2];
+        }
         filled++;
       }
     }
@@ -527,7 +534,7 @@ async function finalizeSticker(srcPath, dstPath, opts, cropPath) {
     const cfg = opts.keepOnlyNearAnchors === true ? {} : opts.keepOnlyNearAnchors;
     keepOnlyNearAnchors(data, cropData, info.width, info.height, cfg.maxDist ?? 12);
   }
-  if (fillHoles) fillInteriorHoles(data, info.width, info.height);
+  if (fillHoles) fillInteriorHoles(data, info.width, info.height, 800, cropData);
   if (trimWhite) trimWhiteEdges(data, info.width, info.height, 0.1, 4, 4);
   if (opts.removeFragments) {
     const fc = opts.removeFragments === true ? {} : opts.removeFragments;
