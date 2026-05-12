@@ -35,7 +35,17 @@ const SHEET_OPTS = {
   // LINE 青背景に白浮きが目立つのでトレードオフ。
   "きゃわいいタイガタウルス": { engine: "ai", model: "birefnet-general", alphaT: 30 },
 };
-const DEFAULT_OPTS = { engine: "ai", model: "isnet-general-use", alphaT: 128, bg: "white" };
+// fillHoles はデフォルト ON。rembg が目・歯等の白部を抜く問題を防ぐ。
+// outline はデフォルト ON で白縁 4px。LINE のチャット背景に乗せた時の視認性向上と
+// 「シール感」演出。文字 (キャプション) も alpha が立っていれば同じ縁取りが付く。
+const DEFAULT_OPTS = {
+  engine: "ai",
+  model: "isnet-general-use",
+  alphaT: 128,
+  bg: "white",
+  fillHoles: true,
+  outline: { thickness: 4, color: [255, 255, 255] },
+};
 
 // LINE sticker spec.
 const MAX_W = 370;
@@ -155,7 +165,102 @@ function trimWhiteEdges(data, w, h, threshold = 0.1, persistRows = 4, minDepth =
   scanCols(w - 1, 0, -1);
 }
 
-async function finalizeSticker(srcPath, dstPath, alphaT, bg, trimWhite) {
+// 外周から到達できない透過領域 (= 内部に出来た「孔」) を opaque に戻す。
+// rembg が「目の白部」「歯の白部」等を背景白と誤判定して透過化する問題への対策。
+function fillInteriorHoles(data, w, h) {
+  const total = w * h;
+  const reachable = new Uint8Array(total);
+  const stack = [];
+  const seed = (idx) => {
+    if (!reachable[idx] && data[idx * 4 + 3] === 0) {
+      reachable[idx] = 1;
+      stack.push(idx);
+    }
+  };
+  // 4 辺すべての透過ピクセルを seed
+  for (let x = 0; x < w; x++) { seed(x); seed((h - 1) * w + x); }
+  for (let y = 0; y < h; y++) { seed(y * w); seed(y * w + (w - 1)); }
+  // BFS で外周から到達可能な透過領域を全て塗る
+  while (stack.length) {
+    const idx = stack.pop();
+    const y = (idx / w) | 0;
+    const x = idx - y * w;
+    if (x > 0) seed(idx - 1);
+    if (x < w - 1) seed(idx + 1);
+    if (y > 0) seed(idx - w);
+    if (y < h - 1) seed(idx + w);
+  }
+  // 透過なのに外周から到達できない = 内部の孔。alpha を 255 に。
+  let filled = 0;
+  for (let i = 0; i < total; i++) {
+    if (data[i * 4 + 3] === 0 && !reachable[i]) {
+      data[i * 4 + 3] = 255;
+      filled++;
+    }
+  }
+  return filled;
+}
+
+// アルファマスクの外側に N px の縁取りを足す (BFS で外周方向に拡張)。
+// キャラクターも文字も alpha が立っているピクセル群の集合体なので、両方に同じ縁取り
+// が掛かる。LINE スタンプは背景がチャット色 (青) の上に乗るため、白縁取りで視認性
+// アップ + キャラ周囲に「シール感」が出る。
+function addOutline(data, w, h, thickness, color) {
+  const total = w * h;
+  const dist = new Int32Array(total).fill(-1);
+  const queue = [];
+  // 透過ピクセルが「不透明ピクセル」と直接隣接していたら距離 1
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      if (data[i * 4 + 3] > 0) continue; // 既に opaque はスキップ
+      // 上下左右に opaque があれば seed
+      let isEdge = false;
+      if (x > 0 && data[(i - 1) * 4 + 3] > 0) isEdge = true;
+      else if (x < w - 1 && data[(i + 1) * 4 + 3] > 0) isEdge = true;
+      else if (y > 0 && data[(i - w) * 4 + 3] > 0) isEdge = true;
+      else if (y < h - 1 && data[(i + w) * 4 + 3] > 0) isEdge = true;
+      if (isEdge) {
+        dist[i] = 1;
+        queue.push(i);
+      }
+    }
+  }
+  // BFS で thickness まで広げる
+  let head = 0;
+  while (head < queue.length) {
+    const i = queue[head++];
+    const d = dist[i];
+    if (d >= thickness) continue;
+    const y = (i / w) | 0;
+    const x = i - y * w;
+    const neighbors = [
+      x > 0 ? i - 1 : -1,
+      x < w - 1 ? i + 1 : -1,
+      y > 0 ? i - w : -1,
+      y < h - 1 ? i + w : -1,
+    ];
+    for (const ni of neighbors) {
+      if (ni < 0) continue;
+      if (dist[ni] >= 0) continue;
+      if (data[ni * 4 + 3] > 0) continue;
+      dist[ni] = d + 1;
+      queue.push(ni);
+    }
+  }
+  // 拡張ピクセルを color で塗りつぶす
+  const [cr, cg, cb] = color;
+  for (let i = 0; i < total; i++) {
+    if (dist[i] > 0) {
+      data[i * 4] = cr;
+      data[i * 4 + 1] = cg;
+      data[i * 4 + 2] = cb;
+      data[i * 4 + 3] = 255;
+    }
+  }
+}
+
+async function finalizeSticker(srcPath, dstPath, alphaT, bg, trimWhite, fillHoles, outline) {
   const { data, info } = await sharp(srcPath).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   for (let i = 0; i < data.length; i += 4) {
     let a = data[i + 3];
@@ -166,7 +271,14 @@ async function finalizeSticker(srcPath, dstPath, alphaT, bg, trimWhite) {
     }
     data[i + 3] = a;
   }
+  if (fillHoles) fillInteriorHoles(data, info.width, info.height);
   if (trimWhite) trimWhiteEdges(data, info.width, info.height, 0.1, 4, 4);
+  if (outline) {
+    const cfg = outline === true ? {} : outline;
+    const thickness = cfg.thickness ?? 4;
+    const color = cfg.color ?? [255, 255, 255];
+    addOutline(data, info.width, info.height, thickness, color);
+  }
   const buf = await sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } })
     .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 }, threshold: 1 })
     .resize({ width: MAX_W, height: MAX_H, fit: "inside", withoutEnlargement: false })
@@ -212,7 +324,7 @@ for (const d of subdirs) {
     const dst = path.join(outDir, f);
     if (opts.engine === "ai") {
       const aiPath = path.join(AI_DIR, d.name, f);
-      await finalizeSticker(aiPath, dst, opts.alphaT, opts.bg, opts.trimWhite);
+      await finalizeSticker(aiPath, dst, opts.alphaT, opts.bg, opts.trimWhite, opts.fillHoles, opts.outline);
     } else {
       await finalizeOpaque(path.join(inDir, f), dst);
     }

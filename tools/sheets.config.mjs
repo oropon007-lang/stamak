@@ -35,7 +35,7 @@ export const SHEETS = [
     // 与える。
     autoCellsOpts: { colDensityRatio: 0.30, bboxPad: 20 },
   },
-  { file: "目の錯覚.jpg",                  cols: 3, rows: 3 },
+  { file: "目の錯覚.jpg",                  cols: 3, rows: 3, complete: true },
   { file: "絶景.jpg",                      cols: 3, rows: 3 },
   { file: "遅刻には神罰を下す.jpg",        cols: 3, rows: 3 },
   { file: "ドット霊夢.png",                cols: 5, rows: 2, topCrop: 80, complete: true },
