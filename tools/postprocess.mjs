@@ -264,9 +264,12 @@ async function finalizeSticker(srcPath, dstPath, opts, cropPath) {
   const { alphaT, bg, trimWhite, fillHoles, outline, preserveText } = opts;
   const { data, info } = await sharp(srcPath).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
 
-  // preserveText: 元 crop の暗ピクセル (≒ 黒文字) を強制的に opaque で保持。
-  // rembg が「文字 = 背景」と誤判定して消してしまうケースの救済。
-  // 「白背景 + 黒文字」という前提が崩れる sheet には適用しない。
+  // preserveText: 元 crop の「文字 + エフェクト」相当ピクセルを強制的に opaque 保持。
+  // rembg が「キャラ以外 = 背景」と判定して消してしまう、文字 (黒) と装飾エフェクト
+  // (ハート♥、星✦、吹き出し等の色付き要素) の救済。
+  //   - 暗ピクセル (R,G,B < darkThreshold)        → 黒文字
+  //   - 彩度の高いピクセル (max-min > satThreshold) → 色付きエフェクト (ハート/星/吹き出し)
+  // 白背景 (max,min とも >= whiteThreshold) は対象外。
   let cropData = null;
   if (preserveText) {
     const cropped = await sharp(cropPath).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
@@ -274,7 +277,10 @@ async function finalizeSticker(srcPath, dstPath, opts, cropPath) {
       cropData = cropped.data;
     }
   }
-  const darkThreshold = (preserveText && preserveText.darkThreshold) || 100;
+  const ptCfg = preserveText === true ? {} : (preserveText || {});
+  const darkThreshold = ptCfg.darkThreshold ?? 100;
+  const satThreshold = ptCfg.satThreshold ?? 40;
+  const whiteThreshold = ptCfg.whiteThreshold ?? 240;
 
   for (let i = 0; i < data.length; i += 4) {
     let a = data[i + 3];
@@ -283,10 +289,14 @@ async function finalizeSticker(srcPath, dstPath, opts, cropPath) {
       const r = data[i], g = data[i + 1], b = data[i + 2];
       if (g > r + 25 && g > b + 25) a = 0;
     }
-    // 元画像の暗いピクセルは強制保持
     if (a === 0 && cropData) {
       const cr = cropData[i], cg = cropData[i + 1], cb = cropData[i + 2];
-      if (cr < darkThreshold && cg < darkThreshold && cb < darkThreshold) {
+      const maxC = Math.max(cr, cg, cb);
+      const minC = Math.min(cr, cg, cb);
+      const isDark = cr < darkThreshold && cg < darkThreshold && cb < darkThreshold;
+      const isWhite = minC >= whiteThreshold;
+      const isSaturated = !isWhite && (maxC - minC) > satThreshold;
+      if (isDark || isSaturated) {
         data[i] = cr; data[i + 1] = cg; data[i + 2] = cb;
         a = 255;
       }
