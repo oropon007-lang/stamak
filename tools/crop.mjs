@@ -2,6 +2,7 @@ import sharp from "sharp";
 import { copyFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { SHEETS, sheetBasename } from "./sheets.config.mjs";
+import { autoDetectCellsByWhiteBg } from "./auto-cells.mjs";
 
 // Source images live in BoxSync (synced for backup); program lives outside it
 // so it doesn't get reverted by sync events.
@@ -46,9 +47,17 @@ for (const sheet of SHEETS) {
   const sourceExt = path.extname(sheet.file);
   await copyFile(src, path.join(subdir, `_source${sourceExt}`));
 
-  const cells = sheet.cells
-    ? sheet.cells
-    : gridToCells(meta, sheet.cols, sheet.rows, sheet.topCrop ?? 0);
+  let cells, layoutDesc;
+  if (sheet.autoCells === "white-bg") {
+    cells = await autoDetectCellsByWhiteBg(src, sheet.autoCellsOpts || {});
+    layoutDesc = `auto-cells (white-bg) × ${cells.length}`;
+  } else if (sheet.cells) {
+    cells = sheet.cells;
+    layoutDesc = `cells×${cells.length}`;
+  } else {
+    cells = gridToCells(meta, sheet.cols, sheet.rows, sheet.topCrop ?? 0);
+    layoutDesc = `${sheet.cols}x${sheet.rows} = ${sheet.cols * sheet.rows} stickers`;
+  }
 
   let n = 0;
   for (const { left, top, width, height } of cells) {
@@ -57,9 +66,5 @@ for (const sheet of SHEETS) {
     const out = path.join(subdir, `${base}_${idx}.png`);
     await sharp(src).extract({ left, top, width, height }).png().toFile(out);
   }
-
-  const layoutDesc = sheet.cells
-    ? `cells×${cells.length}`
-    : `${sheet.cols}x${sheet.rows} = ${sheet.cols * sheet.rows} stickers`;
   console.log(`${sheet.file}: ${layoutDesc} -> ${path.relative(ROOT, subdir)}/`);
 }

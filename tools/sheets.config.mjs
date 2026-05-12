@@ -23,27 +23,17 @@ export const SHEETS = [
   { file: "ゆるタイガー_3.jpg",            cols: 4, rows: 4, topCrop: 80 },
   { file: "タイガタウルス_1.jpg",          cols: 4, rows: 4, topCrop: 80 },
   { file: "タイガタウルス_2.jpg",          cols: 4, rows: 4, topCrop: 80 },
-  // きゃわいい: 4列5行 (842×1264) だがキャプション (例「無理しないで」「おつかれさま」)
-  // が 1セル 210px より広いため隣セルに食い込む。横方向に少しオーバーラップさせた
-  // cells: [] を使う (各セル幅 250、開始 0/200/400/600)。隣接セル間に 50px 共有領域
-  // ができるが、キャラ中心は重ならず、キャプションが切れずに残る。
+  // きゃわいい: white-bg シート。auto-cells でソース画像の content (非白) ピクセル
+  // 分布から行/列ギャップを検出、各セルに tight bbox を取る。padX 等の固定値は不要。
+  // colDensityRatio: 0.20 — 行1で 1 体だけ大きく前にせり出すタイガーが列ギャップを
+  // 埋めて来るため、列の空き判定をかなり緩めにする必要がある。
   {
     file: "きゃわいいタイガタウルス.png",
-    cells: (() => {
-      const cells = [];
-      const xs = [0, 200, 400, 600];
-      const ws = [250, 250, 250, 242]; // 最右は 600+242=842
-      const rowH = 253;
-      const totalH = 1264;
-      for (let r = 0; r < 5; r++) {
-        const top = r * rowH;
-        const height = r === 4 ? totalH - top : rowH;
-        for (let c = 0; c < 4; c++) {
-          cells.push({ left: xs[c], top, width: ws[c], height });
-        }
-      }
-      return cells;
-    })(),
+    autoCells: "white-bg",
+    // bboxPad: 余白を 20 px 取る。タイトすぎる crop だと rembg がキャプションを
+    // 「キャラ以外 = 背景」と判定して消してしまうため、白い余白を残して context を
+    // 与える。
+    autoCellsOpts: { colDensityRatio: 0.30, bboxPad: 20 },
   },
   { file: "目の錯覚.jpg",                  cols: 3, rows: 3 },
   { file: "絶景.jpg",                      cols: 3, rows: 3 },
