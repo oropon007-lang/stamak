@@ -27,7 +27,7 @@ const SHEET_OPTS = {
   "目の錯覚":     { engine: "none" },
   "ドット霊夢":   { engine: "ai", model: "isnet-anime", bg: "green" },
   "ドット万理沙": { engine: "ai", model: "isnet-anime", bg: "green" },
-  "遅刻には神罰を下す": { engine: "ai", model: "birefnet-general", alphaT: 30, trimWhite: true },
+  "遅刻には神罰を下す": { engine: "ai", model: "birefnet-general", alphaT: 30, trimWhite: true, preserveText: true },
   "残業中世":     { engine: "ai", model: "birefnet-general", alphaT: 30, trimWhite: true },
   "残業ドラゴン_1": { engine: "ai", model: "birefnet-general", alphaT: 30, trimWhite: true, preserveText: true },
   "残業ドラゴン_2": { engine: "ai", model: "birefnet-general", alphaT: 30, trimWhite: true, preserveText: true },
