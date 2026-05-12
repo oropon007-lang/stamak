@@ -33,7 +33,7 @@ export const SHEETS = [
     // bboxPad: 余白を 20 px 取る。タイトすぎる crop だと rembg がキャプションを
     // 「キャラ以外 = 背景」と判定して消してしまうため、白い余白を残して context を
     // 与える。
-    autoCellsOpts: { colDensityRatio: 0.30, bboxPad: 20 },
+    autoCellsOpts: { colDensityRatio: 0.30, bboxPad: 20, minCellWidth: 80 },
   },
   { file: "目の錯覚.jpg",                  cols: 3, rows: 3, complete: true },
   { file: "絶景.jpg",                      cols: 3, rows: 3 },

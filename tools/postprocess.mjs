@@ -31,9 +31,9 @@ const SHEET_OPTS = {
   "残業":         { engine: "ai", model: "birefnet-general", alphaT: 30, trimWhite: true },
   "絶景":         { engine: "ai", model: "birefnet-general", alphaT: 30, trimWhite: true },
   // birefnet が一番マシ (一部キャプションを保持)。isnet-anime は全消し、isnet-general も
-  // 全消しで使えない。キャプション完全保持には engine:"none" (白背景維持) が必要だが
-  // LINE 青背景に白浮きが目立つのでトレードオフ。
-  "きゃわいいタイガタウルス": { engine: "ai", model: "birefnet-general", alphaT: 30 },
+  // 全消しで使えない。残ったキャプション欠落は preserveText で「元 crop の暗ピクセル」を
+  // 強制保持してカバー (きゃわいいは白背景 + 黒文字なので前提が成立)。
+  "きゃわいいタイガタウルス": { engine: "ai", model: "birefnet-general", alphaT: 30, preserveText: true },
 };
 // fillHoles はデフォルト ON。rembg が目・歯等の白部を抜く問題を防ぐ。
 // outline はデフォルト ON で白縁 4px。LINE のチャット背景に乗せた時の視認性向上と
@@ -260,14 +260,36 @@ function addOutline(data, w, h, thickness, color) {
   }
 }
 
-async function finalizeSticker(srcPath, dstPath, alphaT, bg, trimWhite, fillHoles, outline) {
+async function finalizeSticker(srcPath, dstPath, opts, cropPath) {
+  const { alphaT, bg, trimWhite, fillHoles, outline, preserveText } = opts;
   const { data, info } = await sharp(srcPath).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+
+  // preserveText: 元 crop の暗ピクセル (≒ 黒文字) を強制的に opaque で保持。
+  // rembg が「文字 = 背景」と誤判定して消してしまうケースの救済。
+  // 「白背景 + 黒文字」という前提が崩れる sheet には適用しない。
+  let cropData = null;
+  if (preserveText) {
+    const cropped = await sharp(cropPath).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    if (cropped.info.width === info.width && cropped.info.height === info.height) {
+      cropData = cropped.data;
+    }
+  }
+  const darkThreshold = (preserveText && preserveText.darkThreshold) || 100;
+
   for (let i = 0; i < data.length; i += 4) {
     let a = data[i + 3];
     a = a >= alphaT ? 255 : 0;
     if (a > 0 && bg === "green") {
       const r = data[i], g = data[i + 1], b = data[i + 2];
       if (g > r + 25 && g > b + 25) a = 0;
+    }
+    // 元画像の暗いピクセルは強制保持
+    if (a === 0 && cropData) {
+      const cr = cropData[i], cg = cropData[i + 1], cb = cropData[i + 2];
+      if (cr < darkThreshold && cg < darkThreshold && cb < darkThreshold) {
+        data[i] = cr; data[i + 1] = cg; data[i + 2] = cb;
+        a = 255;
+      }
     }
     data[i + 3] = a;
   }
@@ -324,7 +346,7 @@ for (const d of subdirs) {
     const dst = path.join(outDir, f);
     if (opts.engine === "ai") {
       const aiPath = path.join(AI_DIR, d.name, f);
-      await finalizeSticker(aiPath, dst, opts.alphaT, opts.bg, opts.trimWhite, opts.fillHoles, opts.outline);
+      await finalizeSticker(aiPath, dst, opts, path.join(inDir, f));
     } else {
       await finalizeOpaque(path.join(inDir, f), dst);
     }
