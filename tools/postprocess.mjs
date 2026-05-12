@@ -48,6 +48,9 @@ const SHEET_OPTS = {
 // fillHoles はデフォルト ON。rembg が目・歯等の白部を抜く問題を防ぐ。
 // outline はデフォルト ON で白縁 4px。LINE のチャット背景に乗せた時の視認性向上と
 // 「シール感」演出。文字 (キャプション) も alpha が立っていれば同じ縁取りが付く。
+// removeFragments もデフォルト ON。隣接 sticker の切れ端 (尻尾の先、体の一部等)
+// を透過化。ignoreLargestN: 2 で本体 + キャプションは保護、3 番目以降の小成分
+// で外周接触のものだけ落とす。除去後の余白は trim() + resize() で詰める。
 const DEFAULT_OPTS = {
   engine: "ai",
   model: "isnet-general-use",
@@ -55,6 +58,7 @@ const DEFAULT_OPTS = {
   bg: "white",
   fillHoles: true,
   outline: { thickness: 4, color: [255, 255, 255] },
+  removeFragments: { maxFragmentRatio: 0.15, ignoreLargestN: 2 },
 };
 
 // LINE sticker spec.
@@ -173,6 +177,76 @@ function trimWhiteEdges(data, w, h, threshold = 0.1, persistRows = 4, minDepth =
   scanRows(h - 1, 0, -1);
   scanCols(0, w - 1, 1);
   scanCols(w - 1, 0, -1);
+}
+
+// 外周に接していて、メイン本体より十分小さい連結成分 ("切れ端") を透過化する。
+// 隣接 sticker のはみ出し残骸 (尻尾の先、体の一部、文字の端等) を除去する用途。
+// 削除後は sharp の trim() で余白が落ちて、resize() で拡大されるので最終出力に
+// 空きスペースは残らない。
+//   maxFragmentRatio: 最大成分に対するサイズ比 (これ以下は切れ端候補)
+//   ignoreLargestN:   保護する最大成分数 (デフォルト 1)。キャプションが主体と
+//                     別成分の場合に 2-3 にしたいケースもある。
+function removeEdgeFragments(data, w, h, maxFragmentRatio = 0.15, ignoreLargestN = 1) {
+  const total = w * h;
+  const label = new Int32Array(total);
+  const sizes = [0]; // index 0 unused, components start at 1
+  const touchesEdge = [false];
+  let nextId = 1;
+
+  for (let i = 0; i < total; i++) {
+    if (label[i] !== 0) continue;
+    if (data[i * 4 + 3] === 0) continue;
+    // BFS flood-fill
+    const stack = [i];
+    label[i] = nextId;
+    let size = 0;
+    let edge = false;
+    while (stack.length) {
+      const idx = stack.pop();
+      size++;
+      const y = (idx / w) | 0;
+      const x = idx - y * w;
+      if (x === 0 || x === w - 1 || y === 0 || y === h - 1) edge = true;
+      const ns = [
+        x > 0 ? idx - 1 : -1,
+        x < w - 1 ? idx + 1 : -1,
+        y > 0 ? idx - w : -1,
+        y < h - 1 ? idx + w : -1,
+      ];
+      for (const ni of ns) {
+        if (ni < 0) continue;
+        if (label[ni] !== 0) continue;
+        if (data[ni * 4 + 3] === 0) continue;
+        label[ni] = nextId;
+        stack.push(ni);
+      }
+    }
+    sizes.push(size);
+    touchesEdge.push(edge);
+    nextId++;
+  }
+
+  if (nextId <= 1) return 0;
+
+  // 大きい順の id を割り出す。最大 ignoreLargestN 個は無条件で保護。
+  const ids = Array.from({ length: nextId - 1 }, (_, k) => k + 1).sort((a, b) => sizes[b] - sizes[a]);
+  const maxSize = sizes[ids[0]];
+  const protectedIds = new Set(ids.slice(0, ignoreLargestN));
+  const sizeThreshold = maxSize * maxFragmentRatio;
+  const toRemove = new Set();
+  for (const id of ids) {
+    if (protectedIds.has(id)) continue;
+    if (touchesEdge[id] && sizes[id] < sizeThreshold) {
+      toRemove.add(id);
+    }
+  }
+  if (toRemove.size === 0) return 0;
+  for (let i = 0; i < total; i++) {
+    if (toRemove.has(label[i])) {
+      data[i * 4 + 3] = 0;
+    }
+  }
+  return toRemove.size;
 }
 
 // 外周から到達できない透過領域 (= 内部に出来た「孔」) を opaque に戻す。
@@ -315,6 +389,14 @@ async function finalizeSticker(srcPath, dstPath, opts, cropPath) {
   }
   if (fillHoles) fillInteriorHoles(data, info.width, info.height);
   if (trimWhite) trimWhiteEdges(data, info.width, info.height, 0.1, 4, 4);
+  if (opts.removeFragments) {
+    const fc = opts.removeFragments === true ? {} : opts.removeFragments;
+    removeEdgeFragments(
+      data, info.width, info.height,
+      fc.maxFragmentRatio ?? 0.15,
+      fc.ignoreLargestN ?? 2,
+    );
+  }
   if (outline) {
     const cfg = outline === true ? {} : outline;
     const thickness = cfg.thickness ?? 4;
