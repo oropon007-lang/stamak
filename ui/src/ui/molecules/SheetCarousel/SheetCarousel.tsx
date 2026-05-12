@@ -5,6 +5,8 @@ export interface SheetCarouselItem {
   id: string;
   label: string;
   imageSrc: string | null;
+  /** 完成済 (右上に ✓ バッジ + 緑枠) */
+  complete?: boolean;
 }
 
 export interface SheetCarouselProps {
@@ -142,16 +144,28 @@ export function SheetCarousel({
               aria-selected={isActive}
               type="button"
               onClick={() => onSelect(item.id)}
-              title={item.label}
+              title={item.complete ? `${item.label} (完成)` : item.label}
               className={cn(
-                "shrink-0 snap-center w-[88px] flex flex-col items-center gap-1 px-1.5 py-2",
-                "rounded-xl border bg-white text-[11px] cursor-pointer",
+                "relative shrink-0 snap-center w-[88px] flex flex-col items-center gap-1 px-1.5 py-2",
+                "rounded-xl border-2 bg-white text-[11px] cursor-pointer",
                 "transition-[background,border-color,color,transform] duration-100",
-                isActive
-                  ? "border-emerald-500 bg-emerald-50 text-gray-900"
-                  : "border-gray-200 text-gray-500 hover:bg-gray-50",
+                isActive && !item.complete && "border-emerald-500 bg-emerald-50 text-gray-900",
+                isActive && item.complete && "border-emerald-600 bg-emerald-100 text-gray-900",
+                !isActive && item.complete && "border-emerald-400 text-gray-700",
+                !isActive && !item.complete && "border-gray-200 text-gray-500 hover:bg-gray-50",
               )}
             >
+              {item.complete && (
+                <span
+                  aria-hidden="true"
+                  className="absolute -top-1.5 -right-1.5 z-10 h-5 w-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-sm ring-2 ring-white"
+                  title="完成"
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </span>
+              )}
               {item.imageSrc ? (
                 <img
                   src={item.imageSrc}

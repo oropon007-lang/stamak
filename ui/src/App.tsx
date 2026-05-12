@@ -61,8 +61,9 @@ function App() {
     () =>
       sheets.map((s) => ({
         id: s.name,
-        label: s.complete ? `${s.name} ✓` : s.name,
+        label: s.name,
         imageSrc: s.tab ? stickerSrc(s.name, s.tab) : null,
+        complete: s.complete,
       })),
     [sheets],
   );
