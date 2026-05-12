@@ -21,8 +21,12 @@ export const SHEETS = [
   { file: "ゆるタイガー_1.jpg",            cols: 4, rows: 4, topCrop: 80 },
   { file: "ゆるタイガー_2.jpg",            cols: 4, rows: 4, topCrop: 80 },
   { file: "ゆるタイガー_3.jpg",            cols: 4, rows: 4, topCrop: 80 },
+  // タイガタウルス_1: キャプションは全 cell 上部横書きの統一レイアウト。
   { file: "タイガタウルス_1.jpg",          cols: 4, rows: 4, topCrop: 80 },
-  { file: "タイガタウルス_2.jpg",          cols: 4, rows: 4, topCrop: 80 },
+  // タイガタウルス_2: キャプション位置が cell ごとに違う (col 1,2 は上部横書き、
+  // col 3,4 は縦書き側面)。topCrop を使うと縦書きが削れるため不使用。
+  // preserveText でキャプション・色エフェクトの欠落を救う。
+  { file: "タイガタウルス_2.jpg",          cols: 4, rows: 4 },
   // きゃわいい: white-bg シート。auto-cells でソース画像の content (非白) ピクセル
   // 分布から行/列ギャップを検出、各セルに tight bbox を取る。padX 等の固定値は不要。
   // colDensityRatio: 0.20 — 行1で 1 体だけ大きく前にせり出すタイガーが列ギャップを

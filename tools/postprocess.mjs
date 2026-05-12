@@ -34,6 +34,9 @@ const SHEET_OPTS = {
   // 全消しで使えない。残ったキャプション欠落は preserveText で「元 crop の暗ピクセル」を
   // 強制保持してカバー (きゃわいいは白背景 + 黒文字なので前提が成立)。
   "きゃわいいタイガタウルス": { engine: "ai", model: "birefnet-general", alphaT: 30, preserveText: true },
+  // タイガタウルス_2: キャプションが各 cell で違う位置 (上部 / 縦書き側面) にあり、
+  // topCrop で機械的に削れない。preserveText で AI が消したキャプションを救う。
+  "タイガタウルス_2": { preserveText: true },
 };
 // fillHoles はデフォルト ON。rembg が目・歯等の白部を抜く問題を防ぐ。
 // outline はデフォルト ON で白縁 4px。LINE のチャット背景に乗せた時の視認性向上と
