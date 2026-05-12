@@ -18,14 +18,14 @@ export const SHEETS = [
   { file: "ゴブリン_2.jpg",                cols: 6, rows: 4 },
   { file: "下半身タイガー_1.jpg",          cols: 4, rows: 4 },
   { file: "下半身タイガー_2.jpg",          cols: 4, rows: 4 },
-  { file: "ゆるタイガー_1.jpg",            cols: 4, rows: 4, topCrop: 80 },
-  { file: "ゆるタイガー_2.jpg",            cols: 4, rows: 4, topCrop: 80 },
-  { file: "ゆるタイガー_3.jpg",            cols: 4, rows: 4, topCrop: 80 },
-  // タイガタウルス_1: キャプションは全 cell 上部横書きの統一レイアウト。
-  { file: "タイガタウルス_1.jpg",          cols: 4, rows: 4, topCrop: 80 },
-  // タイガタウルス_2: キャプション位置が cell ごとに違う (col 1,2 は上部横書き、
-  // col 3,4 は縦書き側面)。topCrop を使うと縦書きが削れるため不使用。
-  // preserveText でキャプション・色エフェクトの欠落を救う。
+  // ゆるタイガー / タイガタウルス系: レイアウトは sheet ごとに微妙に違い (キャプション
+  // 位置や cell 内余白等)、topCrop 等の固定値で決め打ちはしない方針。grid 4x4 だけ
+  // 指定し、キャプション・エフェクト保持は preserveText (postprocess SHEET_OPTS) に
+  // 委ねる。
+  { file: "ゆるタイガー_1.jpg",            cols: 4, rows: 4 },
+  { file: "ゆるタイガー_2.jpg",            cols: 4, rows: 4 },
+  { file: "ゆるタイガー_3.jpg",            cols: 4, rows: 4 },
+  { file: "タイガタウルス_1.jpg",          cols: 4, rows: 4 },
   { file: "タイガタウルス_2.jpg",          cols: 4, rows: 4 },
   // きゃわいい: white-bg シート。auto-cells でソース画像の content (非白) ピクセル
   // 分布から行/列ギャップを検出、各セルに tight bbox を取る。padX 等の固定値は不要。
@@ -44,8 +44,9 @@ export const SHEETS = [
   { file: "遅刻には神罰を下す.jpg",        cols: 3, rows: 3 },
   { file: "ドット霊夢.png",                cols: 5, rows: 2, topCrop: 80, complete: true },
   { file: "ドット万理沙.png",              cols: 5, rows: 2, topCrop: 80, complete: true },
+  // 残業中世: 1536×1024 の不規則 4+2+3 レイアウト (旧 残業.jpg をリネーム)。
   {
-    file: "残業.jpg",
+    file: "残業中世.jpg",
     cells: [
       { left: 0,    top: 0,   width: 384, height: 341 }, // NO残業!!
       { left: 384,  top: 0,   width: 384, height: 341 }, // 定時で帰る!
@@ -58,6 +59,9 @@ export const SHEETS = [
       { left: 1024, top: 682, width: 512, height: 342 }, // 自由を求めて!!
     ],
   },
+  // 残業ドラゴン_1/_2: 1536×1024 の 4 列 × 2 行 = 8 stickers の整然グリッド。
+  { file: "残業ドラゴン_1.jpg",          cols: 4, rows: 2 },
+  { file: "残業ドラゴン_2.jpg",          cols: 4, rows: 2 },
 ];
 
 import path from "node:path";

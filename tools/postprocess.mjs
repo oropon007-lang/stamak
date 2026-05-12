@@ -28,14 +28,21 @@ const SHEET_OPTS = {
   "ドット霊夢":   { engine: "ai", model: "isnet-anime", bg: "green" },
   "ドット万理沙": { engine: "ai", model: "isnet-anime", bg: "green" },
   "遅刻には神罰を下す": { engine: "ai", model: "birefnet-general", alphaT: 30, trimWhite: true },
-  "残業":         { engine: "ai", model: "birefnet-general", alphaT: 30, trimWhite: true },
+  "残業中世":     { engine: "ai", model: "birefnet-general", alphaT: 30, trimWhite: true },
+  "残業ドラゴン_1": { engine: "ai", model: "birefnet-general", alphaT: 30, trimWhite: true, preserveText: true },
+  "残業ドラゴン_2": { engine: "ai", model: "birefnet-general", alphaT: 30, trimWhite: true, preserveText: true },
   "絶景":         { engine: "ai", model: "birefnet-general", alphaT: 30, trimWhite: true },
   // birefnet が一番マシ (一部キャプションを保持)。isnet-anime は全消し、isnet-general も
   // 全消しで使えない。残ったキャプション欠落は preserveText で「元 crop の暗ピクセル」を
   // 強制保持してカバー (きゃわいいは白背景 + 黒文字なので前提が成立)。
   "きゃわいいタイガタウルス": { engine: "ai", model: "birefnet-general", alphaT: 30, preserveText: true },
-  // タイガタウルス_2: キャプションが各 cell で違う位置 (上部 / 縦書き側面) にあり、
-  // topCrop で機械的に削れない。preserveText で AI が消したキャプションを救う。
+  // ゆるタイガー / タイガタウルス: 各 cell に黒文字キャプション + 色エフェクト
+  // (ハート、ドロップ等)。rembg がそれらを「キャラ以外 = 背景」と判定して消す
+  // ことがあるため preserveText で救う。topCrop は使わない方針。
+  "ゆるタイガー_1": { preserveText: true },
+  "ゆるタイガー_2": { preserveText: true },
+  "ゆるタイガー_3": { preserveText: true },
+  "タイガタウルス_1": { preserveText: true },
   "タイガタウルス_2": { preserveText: true },
 };
 // fillHoles はデフォルト ON。rembg が目・歯等の白部を抜く問題を防ぐ。

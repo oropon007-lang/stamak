@@ -53,6 +53,29 @@ function App() {
     localStorage.setItem(BG_STORAGE_KEY, bgId);
   }, [bgId]);
 
+  useEffect(() => {
+    if (!zoomed) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { setZoomed(null); return; }
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      const z = sheets.find((s) => s.name === zoomed.sheet);
+      if (!z) return;
+      const isMeta = zoomed.file === z.main || zoomed.file === z.tab || zoomed.file === z.source;
+      const list = isMeta
+        ? ([z.main, z.tab, z.source].filter(Boolean) as string[])
+        : z.stickers;
+      const idx = list.indexOf(zoomed.file);
+      const delta = e.key === "ArrowRight" ? 1 : -1;
+      const ni = idx + delta;
+      if (ni >= 0 && ni < list.length) {
+        e.preventDefault();
+        setZoomed({ sheet: zoomed.sheet, file: list[ni] });
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [zoomed, sheets]);
+
   const sheet = sheets.find((s) => s.name === active);
   const bg = BACKGROUNDS.find((b) => b.id === bgId) ?? BACKGROUNDS[0];
   const bgStyle = { ["--sticker-bg" as string]: bg.style } as React.CSSProperties;
@@ -184,14 +207,77 @@ function App() {
         </main>
       )}
 
-      {zoomed && (
-        <div className="zoom" onClick={() => setZoomed(null)} role="dialog" aria-modal="true">
-          <div className="zoom__frame">
-            <img src={stickerSrc(zoomed.sheet, zoomed.file)} alt={zoomed.file} />
+      {zoomed && (() => {
+        const zSheet = sheets.find((s) => s.name === zoomed.sheet);
+        if (!zSheet) return null;
+        const isMeta = zoomed.file === zSheet.main || zoomed.file === zSheet.tab || zoomed.file === zSheet.source;
+        const list = isMeta
+          ? ([zSheet.main, zSheet.tab, zSheet.source].filter(Boolean) as string[])
+          : zSheet.stickers;
+        const idx = list.indexOf(zoomed.file);
+        const go = (delta: -1 | 1) => {
+          const ni = idx + delta;
+          if (ni >= 0 && ni < list.length) setZoomed({ sheet: zoomed.sheet, file: list[ni] });
+        };
+        const stop = (e: React.MouseEvent) => e.stopPropagation();
+        return (
+          <div className="zoom" onClick={() => setZoomed(null)} role="dialog" aria-modal="true">
+            <button
+              type="button"
+              className="zoom__nav zoom__nav--prev"
+              onClick={(e) => { stop(e); go(-1); }}
+              disabled={idx <= 0}
+              aria-label="前へ"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+            <div className="zoom__frame" onClick={stop}>
+              <img src={stickerSrc(zoomed.sheet, zoomed.file)} alt={zoomed.file} />
+              <a
+                className="zoom__download"
+                href={stickerSrc(zoomed.sheet, zoomed.file)}
+                download={zoomed.file}
+                onClick={stop}
+                aria-label="ダウンロード"
+                title="ダウンロード"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 4v12" />
+                  <polyline points="6 12 12 18 18 12" />
+                  <line x1="4" y1="20" x2="20" y2="20" />
+                </svg>
+              </a>
+            </div>
+            <button
+              type="button"
+              className="zoom__nav zoom__nav--next"
+              onClick={(e) => { stop(e); go(1); }}
+              disabled={idx >= list.length - 1}
+              aria-label="次へ"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+            <div className="zoom__caption">{zoomed.sheet} / {zoomed.file} <span className="zoom__counter">({idx + 1}/{list.length})</span></div>
+            <div className="zoom__strip" onClick={stop}>
+              {list.map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  className={`zoom__thumb ${f === zoomed.file ? "zoom__thumb--active" : ""}`}
+                  onClick={() => setZoomed({ sheet: zoomed.sheet, file: f })}
+                  title={f}
+                >
+                  <img src={stickerSrc(zoomed.sheet, f)} alt="" loading="lazy" />
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="zoom__caption">{zoomed.sheet} / {zoomed.file}</div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

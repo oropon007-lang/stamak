@@ -309,17 +309,51 @@
       "complete": false
     },
     {
-      "name": "残業",
+      "name": "残業ドラゴン_1",
       "stickers": [
-        "残業_01.png",
-        "残業_02.png",
-        "残業_03.png",
-        "残業_04.png",
-        "残業_05.png",
-        "残業_06.png",
-        "残業_07.png",
-        "残業_08.png",
-        "残業_09.png"
+        "残業ドラゴン_1_01.png",
+        "残業ドラゴン_1_02.png",
+        "残業ドラゴン_1_03.png",
+        "残業ドラゴン_1_04.png",
+        "残業ドラゴン_1_05.png",
+        "残業ドラゴン_1_06.png",
+        "残業ドラゴン_1_07.png",
+        "残業ドラゴン_1_08.png"
+      ],
+      "main": "main.png",
+      "tab": "tab.png",
+      "source": "_source.jpg",
+      "complete": false
+    },
+    {
+      "name": "残業ドラゴン_2",
+      "stickers": [
+        "残業ドラゴン_2_01.png",
+        "残業ドラゴン_2_02.png",
+        "残業ドラゴン_2_03.png",
+        "残業ドラゴン_2_04.png",
+        "残業ドラゴン_2_05.png",
+        "残業ドラゴン_2_06.png",
+        "残業ドラゴン_2_07.png",
+        "残業ドラゴン_2_08.png"
+      ],
+      "main": "main.png",
+      "tab": "tab.png",
+      "source": "_source.jpg",
+      "complete": false
+    },
+    {
+      "name": "残業中世",
+      "stickers": [
+        "残業中世_01.png",
+        "残業中世_02.png",
+        "残業中世_03.png",
+        "残業中世_04.png",
+        "残業中世_05.png",
+        "残業中世_06.png",
+        "残業中世_07.png",
+        "残業中世_08.png",
+        "残業中世_09.png"
       ],
       "main": "main.png",
       "tab": "tab.png",
