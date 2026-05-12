@@ -55,6 +55,10 @@ const SHEET_OPTS = {
 // removeFragments もデフォルト ON。隣接 sticker の切れ端 (尻尾の先、体の一部等)
 // を透過化。ignoreLargestN: 2 で本体 + キャプションは保護、3 番目以降の小成分
 // で外周接触のものだけ落とす。除去後の余白は trim() + resize() で詰める。
+// keepOnlyNearAnchors: dark (文字輪郭) / saturated (キャラ色) ピクセルから maxDist
+// ピクセル以内に届かない opaque を全て透過化。背景に薄く残る灰色 (煙・もや・
+// テクスチャ等) を一掃する。preserveText が ON でキャラ色を確保できているシート
+// で効果大。
 const DEFAULT_OPTS = {
   engine: "ai",
   model: "isnet-general-use",
@@ -63,6 +67,7 @@ const DEFAULT_OPTS = {
   fillHoles: true,
   outline: { thickness: 4, color: [255, 255, 255] },
   removeFragments: { maxFragmentRatio: 0.15, ignoreLargestN: 2 },
+  keepOnlyNearAnchors: { maxDist: 12 },
 };
 
 // LINE sticker spec.
@@ -181,6 +186,62 @@ function trimWhiteEdges(data, w, h, threshold = 0.1, persistRows = 4, minDepth =
   scanRows(h - 1, 0, -1);
   scanCols(0, w - 1, 1);
   scanCols(w - 1, 0, -1);
+}
+
+// 「dark/saturated anchor」から maxDist ピクセル以内に到達できない opaque ピクセル
+// を透過化する。背景にうっすら残る灰色装飾 (煙・もや・スパークル・薄い背景トーン
+// など) はキャラから距離が空いている → 落ちる。キャラ本体の影 / 縁 / 内部は anchor
+// に隣接しているので残る。
+//   anchor = 元 crop ピクセルが
+//     dark      (R,G,B 全て < 100)、または
+//     saturated (max - min > 40)
+//   その他の opaque ピクセル (中間灰色含む) は anchor からの BFS で到達できれば残す。
+function keepOnlyNearAnchors(data, cropData, w, h, maxDist = 12) {
+  if (!cropData) return 0;
+  const total = w * h;
+  const dist = new Uint8Array(total); // 0 = 未到達、1.. = anchor からの距離
+  const queue = [];
+  for (let i = 0; i < total; i++) {
+    if (data[i * 4 + 3] === 0) continue;
+    const cr = cropData[i * 4], cg = cropData[i * 4 + 1], cb = cropData[i * 4 + 2];
+    const maxC = Math.max(cr, cg, cb);
+    const minC = Math.min(cr, cg, cb);
+    const isDark = cr < 100 && cg < 100 && cb < 100;
+    const isSat = (maxC - minC) > 40;
+    if (isDark || isSat) {
+      dist[i] = 1;
+      queue.push(i);
+    }
+  }
+  let head = 0;
+  while (head < queue.length) {
+    const idx = queue[head++];
+    const d = dist[idx];
+    if (d >= maxDist) continue;
+    const y = (idx / w) | 0;
+    const x = idx - y * w;
+    const ns = [
+      x > 0 ? idx - 1 : -1,
+      x < w - 1 ? idx + 1 : -1,
+      y > 0 ? idx - w : -1,
+      y < h - 1 ? idx + w : -1,
+    ];
+    for (const ni of ns) {
+      if (ni < 0) continue;
+      if (dist[ni] > 0) continue;
+      if (data[ni * 4 + 3] === 0) continue;
+      dist[ni] = d + 1;
+      queue.push(ni);
+    }
+  }
+  let dropped = 0;
+  for (let i = 0; i < total; i++) {
+    if (data[i * 4 + 3] > 0 && dist[i] === 0) {
+      data[i * 4 + 3] = 0;
+      dropped++;
+    }
+  }
+  return dropped;
 }
 
 // 外周に接していて、メイン本体より十分小さい連結成分 ("切れ端") を透過化する。
@@ -394,6 +455,10 @@ async function finalizeSticker(srcPath, dstPath, opts, cropPath) {
       }
     }
     data[i + 3] = a;
+  }
+  if (opts.keepOnlyNearAnchors && cropData) {
+    const cfg = opts.keepOnlyNearAnchors === true ? {} : opts.keepOnlyNearAnchors;
+    keepOnlyNearAnchors(data, cropData, info.width, info.height, cfg.maxDist ?? 12);
   }
   if (fillHoles) fillInteriorHoles(data, info.width, info.height);
   if (trimWhite) trimWhiteEdges(data, info.width, info.height, 0.1, 4, 4);
