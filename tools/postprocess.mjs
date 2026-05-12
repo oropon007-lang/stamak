@@ -44,6 +44,10 @@ const SHEET_OPTS = {
   "ゆるタイガー_3": { preserveText: true },
   "タイガタウルス_1": { preserveText: true },
   "タイガタウルス_2": { preserveText: true },
+  "ゴブリン_1": { preserveText: true },
+  "ゴブリン_2": { preserveText: true },
+  "下半身タイガー_1": { preserveText: true },
+  "下半身タイガー_2": { preserveText: true },
 };
 // fillHoles はデフォルト ON。rembg が目・歯等の白部を抜く問題を防ぐ。
 // outline はデフォルト ON で白縁 4px。LINE のチャット背景に乗せた時の視認性向上と
@@ -373,7 +377,11 @@ async function finalizeSticker(srcPath, dstPath, opts, cropPath) {
       const r = data[i], g = data[i + 1], b = data[i + 2];
       if (g > r + 25 && g > b + 25) a = 0;
     }
-    if (a === 0 && cropData) {
+    if (cropData) {
+      // 元 crop ピクセルを参照して、文字 (暗) / エフェクト (彩度高) を判定。
+      // 該当する場合は alpha と RGB を強制的に元画像値で上書き。
+      // alpha が rembg で 0 だったら復活、255 だったら rembg が改変した RGB
+      // (例: text stroke が灰色化) を元の黒/原色に戻す効果がある。
       const cr = cropData[i], cg = cropData[i + 1], cb = cropData[i + 2];
       const maxC = Math.max(cr, cg, cb);
       const minC = Math.min(cr, cg, cb);
