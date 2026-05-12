@@ -84,12 +84,17 @@ async function makeFixedCanvas(srcPath, outPath, width, height) {
     .toFile(outPath);
 }
 
-// 各エッジから走査し、不透明ピクセルのうち「ほぼ白」(R,G,B >= 235) が threshold 以上
-// の行/列は白い縁として透過化する。rembg が saliency 判定で白い背景を残してしまった
-// 場合の救済用 (例: 遅刻シートの下端に白縁が残る)。
-//   threshold: 0..1 (例 0.3 = 30% 以上で縁判定)
-function trimWhiteEdges(data, w, h, threshold = 0.3) {
-  const isNearWhite = (i) => data[i] >= 235 && data[i + 1] >= 235 && data[i + 2] >= 235;
+// 各エッジから走査し、白い縁として透過化する。
+//
+// 単純な「比率閾値で stop」だと白残りが不連続だった場合 (例: 遅刻 Zeus は y=314 で
+// 14% → 停止、その後 y=316,318 で再び 20-28% 残る) に取りこぼす。
+//   → 「過去 M 行のうち、いずれかが threshold 以上なら継続」とする粘り強い走査に。
+//   → さらに edge から N 行以内は常に走査範囲 (連続して低比率でも継続)。
+function trimWhiteEdges(data, w, h, threshold = 0.1, persistRows = 4, minDepth = 4) {
+  // R,G,B が全て 220 以上 = 視覚的に「白〜薄灰」。これより上を rembg が背景白の
+  // 残骸として残してくるケースが多い。下げすぎると本来の白いハイライトを削るので
+  // 220 で実験。
+  const isNearWhite = (i) => data[i] >= 220 && data[i + 1] >= 220 && data[i + 2] >= 220;
   const stripRow = (y) => {
     for (let x = 0; x < w; x++) {
       const i = (y * w + x) * 4;
@@ -118,14 +123,36 @@ function trimWhiteEdges(data, w, h, threshold = 0.3) {
     }
     return opaque ? white / opaque : 0;
   };
-  // top → down
-  for (let y = 0; y < h; y++) { if (rowWhiteRatio(y) >= threshold) stripRow(y); else break; }
-  // bottom → up
-  for (let y = h - 1; y >= 0; y--) { if (rowWhiteRatio(y) >= threshold) stripRow(y); else break; }
-  // left → right
-  for (let x = 0; x < w; x++) { if (colWhiteRatio(x) >= threshold) stripCol(x); else break; }
-  // right → left
-  for (let x = w - 1; x >= 0; x--) { if (colWhiteRatio(x) >= threshold) stripCol(x); else break; }
+
+  // 1 方向走査: from..to は inclusive、step は +1 / -1
+  const scanRows = (from, to, step) => {
+    const recent = [];
+    let depth = 0;
+    for (let y = from; step > 0 ? y <= to : y >= to; y += step, depth++) {
+      const ratio = rowWhiteRatio(y);
+      if (ratio >= threshold) stripRow(y);
+      recent.push(ratio);
+      if (recent.length > persistRows) recent.shift();
+      // 最低 minDepth 行は強制継続。それ以降は、直近 persistRows がすべて threshold 未満なら停止。
+      if (depth >= minDepth && recent.every(r => r < threshold)) break;
+    }
+  };
+  const scanCols = (from, to, step) => {
+    const recent = [];
+    let depth = 0;
+    for (let x = from; step > 0 ? x <= to : x >= to; x += step, depth++) {
+      const ratio = colWhiteRatio(x);
+      if (ratio >= threshold) stripCol(x);
+      recent.push(ratio);
+      if (recent.length > persistRows) recent.shift();
+      if (depth >= minDepth && recent.every(r => r < threshold)) break;
+    }
+  };
+
+  scanRows(0, h - 1, 1);
+  scanRows(h - 1, 0, -1);
+  scanCols(0, w - 1, 1);
+  scanCols(w - 1, 0, -1);
 }
 
 async function finalizeSticker(srcPath, dstPath, alphaT, bg, trimWhite) {
@@ -139,7 +166,7 @@ async function finalizeSticker(srcPath, dstPath, alphaT, bg, trimWhite) {
     }
     data[i + 3] = a;
   }
-  if (trimWhite) trimWhiteEdges(data, info.width, info.height, 0.15);
+  if (trimWhite) trimWhiteEdges(data, info.width, info.height, 0.1, 4, 4);
   const buf = await sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } })
     .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 }, threshold: 1 })
     .resize({ width: MAX_W, height: MAX_H, fit: "inside", withoutEnlargement: false })
