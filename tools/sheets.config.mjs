@@ -41,7 +41,7 @@ export const SHEETS = [
   },
   { file: "目の錯覚.jpg",                  cols: 3, rows: 3, complete: true },
   { file: "絶景.jpg",                      cols: 3, rows: 3 },
-  { file: "遅刻には神罰を下す.jpg",        cols: 3, rows: 3 },
+  { file: "遅刻には神罰を下す.jpg",        cols: 3, rows: 3, complete: true },
   { file: "ドット霊夢.png",                cols: 5, rows: 2, topCrop: 80, complete: true },
   { file: "ドット万理沙.png",              cols: 5, rows: 2, topCrop: 80, complete: true },
   // 残業中世: 1536×1024 の不規則 4+2+3 レイアウト (旧 残業.jpg をリネーム)。

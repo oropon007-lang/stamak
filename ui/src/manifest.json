@@ -543,7 +543,7 @@
       "main": "main.png",
       "tab": "tab.png",
       "source": "_source.jpg",
-      "complete": false
+      "complete": true
     }
   ]
 }
