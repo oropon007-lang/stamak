@@ -51,13 +51,13 @@ const SHEET_OPTS = {
   // 新規シート (2026-05): 白背景 + テキストを含むものは preserveText で text crisp 化
   "Slackでもつかえそう": { preserveText: true },
   "Slackでもつかえそう２": { preserveText: true },
-  // 実写・イラスト系サラリーマン: 白シャツが rembg に「背景」と誤判定されて透過化
-  // される現象が頻発。restoreEnclosedWhite で「anchor (skin/tie/pants 等の dark/sat)
-  // に 4 方向囲まれた白ピクセル」を強制復元。
-  "うざサラリーマン":       { preserveText: true, restoreEnclosedWhite: { maxDist: 60 } },
-  "おどるサラリーマン":     { preserveText: true, restoreEnclosedWhite: { maxDist: 60 } },
-  "にちゃりサラリーマン_1": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 } },
-  "にちゃりサラリーマン_2": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 } },
+  // 実写・イラスト系サラリーマン: 人物専用 u2net_human_seg で AI が人体全体 (白シャ
+  // ツ含む) を認識。keepOnlyNearAnchors はオフ (シャツ中央は anchor から遠いので
+  // 同機能だとシャツが透過化されてしまう)。preserveText でキャプション crisp 化。
+  "うざサラリーマン":       { model: "u2net_human_seg", preserveText: true, keepOnlyNearAnchors: false },
+  "おどるサラリーマン":     { model: "u2net_human_seg", preserveText: true, keepOnlyNearAnchors: false },
+  "にちゃりサラリーマン_1": { model: "u2net_human_seg", preserveText: true, keepOnlyNearAnchors: false },
+  "にちゃりサラリーマン_2": { model: "u2net_human_seg", preserveText: true, keepOnlyNearAnchors: false },
   // 必殺技: 暗背景 + ダメージ数字 + 必殺技イラスト。birefnet で本体抽出、テキスト保持。
   "必殺技": { engine: "ai", model: "birefnet-general", alphaT: 30, trimWhite: true, preserveText: true },
 };
