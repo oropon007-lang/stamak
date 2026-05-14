@@ -28,9 +28,12 @@ const SHEET_OPTS = {
   "ドット霊夢":   { engine: "ai", model: "isnet-anime", bg: "green" },
   "ドット万理沙": { engine: "ai", model: "isnet-anime", bg: "green" },
   "遅刻には神罰を下す": { engine: "ai", model: "birefnet-general", alphaT: 30, trimWhite: true, preserveText: true },
-  "残業中世":     { engine: "ai", model: "birefnet-general", alphaT: 30, trimWhite: true },
-  "残業ドラゴン_1": { engine: "ai", model: "birefnet-general", alphaT: 30, trimWhite: true, preserveText: true },
-  "残業ドラゴン_2": { engine: "ai", model: "birefnet-general", alphaT: 30, trimWhite: true, preserveText: true },
+  // 残業中世 / 残業ドラゴン: 白い吹き出し (背景は dark/colorful) が rembg に背景判定
+  // されて穴が空く。restoreEnclosedWhite + keepOnlyNearAnchors:false で救う。
+  // trimWhite は白の縁が消えるので無効化。
+  "残業中世":     { engine: "ai", model: "birefnet-general", alphaT: 30, preserveText: true, restoreEnclosedWhite: { maxDist: 80 }, keepOnlyNearAnchors: false },
+  "残業ドラゴン_1": { engine: "ai", model: "birefnet-general", alphaT: 30, preserveText: true, restoreEnclosedWhite: { maxDist: 80 }, keepOnlyNearAnchors: false },
+  "残業ドラゴン_2": { engine: "ai", model: "birefnet-general", alphaT: 30, preserveText: true, restoreEnclosedWhite: { maxDist: 80 }, keepOnlyNearAnchors: false },
   "絶景":         { engine: "ai", model: "birefnet-general", alphaT: 30, trimWhite: true },
   // birefnet が一番マシ (一部キャプションを保持)。isnet-anime は全消し、isnet-general も
   // 全消しで使えない。残ったキャプション欠落は preserveText で「元 crop の暗ピクセル」を
