@@ -38,19 +38,23 @@ const SHEET_OPTS = {
   // birefnet が一番マシ (一部キャプションを保持)。isnet-anime は全消し、isnet-general も
   // 全消しで使えない。残ったキャプション欠落は preserveText で「元 crop の暗ピクセル」を
   // 強制保持してカバー (きゃわいいは白背景 + 黒文字なので前提が成立)。
-  "きゃわいいタイガタウルス": { engine: "ai", model: "birefnet-general", alphaT: 30, preserveText: true },
+  // きゃわいい: 白服・白いお腹を保護
+  "きゃわいいタイガタウルス": { engine: "ai", model: "birefnet-general", alphaT: 30, preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false },
   // ゆるタイガー / タイガタウルス: 各 cell に黒文字キャプション + 色エフェクト
   // (ハート、ドロップ等)。rembg がそれらを「キャラ以外 = 背景」と判定して消す
   // ことがあるため preserveText で救う。topCrop は使わない方針。
-  "ゆるタイガー_1": { preserveText: true },
-  "ゆるタイガー_2": { preserveText: true },
-  "ゆるタイガー_3": { preserveText: true },
-  "タイガタウルス_1": { preserveText: true },
-  "タイガタウルス_2": { preserveText: true },
-  "ゴブリン_1": { preserveText: true },
-  "ゴブリン_2": { preserveText: true },
-  "下半身タイガー_1": { preserveText: true },
-  "下半身タイガー_2": { preserveText: true },
+  // タイガー系: 白いお腹・白いシャツ部分が rembg に背景判定されないように
+  // restoreEnclosedWhite (4 方向 anchor 囲み判定) + keepOnlyNearAnchors:false。
+  "ゆるタイガー_1": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false },
+  "ゆるタイガー_2": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false },
+  "ゆるタイガー_3": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false },
+  "タイガタウルス_1": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false },
+  "タイガタウルス_2": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false },
+  "下半身タイガー_1": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false },
+  "下半身タイガー_2": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false },
+  // ゴブリン: 顕著な白部分は無いが、目の白・歯等の小さな白を保護。
+  "ゴブリン_1": { preserveText: true, restoreEnclosedWhite: { maxDist: 40 } },
+  "ゴブリン_2": { preserveText: true, restoreEnclosedWhite: { maxDist: 40 } },
   // 新規シート (2026-05): 白背景 + テキストを含むものは preserveText で text crisp 化
   "Slackでもつかえそう": { preserveText: true },
   "Slackでもつかえそう２": { preserveText: true },
