@@ -39,22 +39,25 @@ const SHEET_OPTS = {
   // 全消しで使えない。残ったキャプション欠落は preserveText で「元 crop の暗ピクセル」を
   // 強制保持してカバー (きゃわいいは白背景 + 黒文字なので前提が成立)。
   // きゃわいい: 白服・白いお腹を保護
-  "きゃわいいタイガタウルス": { engine: "ai", model: "birefnet-general", alphaT: 30, preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false },
+  "きゃわいいタイガタウルス": { engine: "ai", model: "birefnet-general", alphaT: 30, preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false, whiteHoleMaxSize: 600 },
   // ゆるタイガー / タイガタウルス: 各 cell に黒文字キャプション + 色エフェクト
   // (ハート、ドロップ等)。rembg がそれらを「キャラ以外 = 背景」と判定して消す
   // ことがあるため preserveText で救う。topCrop は使わない方針。
   // タイガー系: 白いお腹・白いシャツ部分が rembg に背景判定されないように
   // restoreEnclosedWhite (4 方向 anchor 囲み判定) + keepOnlyNearAnchors:false。
-  "ゆるタイガー_1": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false },
-  "ゆるタイガー_2": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false },
-  "ゆるタイガー_3": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false },
-  "タイガタウルス_1": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false },
-  "タイガタウルス_2": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false },
-  "下半身タイガー_1": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false },
-  "下半身タイガー_2": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false },
+  // whiteHoleMaxSize: 600 — キャラの脚の隙間等に閉じ込められた bg-white が
+  // fillInteriorHoles で埋め戻されて「白残り」になる現象の抑制。目の白・歯の白等
+  // (~100 px 以下) は埋まり、ベリーの白は restoreEnclosedWhite が個別に救う。
+  "ゆるタイガー_1": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false, whiteHoleMaxSize: 600 },
+  "ゆるタイガー_2": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false, whiteHoleMaxSize: 600 },
+  "ゆるタイガー_3": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false, whiteHoleMaxSize: 600 },
+  "タイガタウルス_1": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false, whiteHoleMaxSize: 600 },
+  "タイガタウルス_2": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false, whiteHoleMaxSize: 600 },
+  "下半身タイガー_1": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false, whiteHoleMaxSize: 600 },
+  "下半身タイガー_2": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false, whiteHoleMaxSize: 600 },
   // ゴブリン: 顕著な白部分は無いが、目の白・歯等の小さな白を保護。
-  "ゴブリン_1": { preserveText: true, restoreEnclosedWhite: { maxDist: 40 } },
-  "ゴブリン_2": { preserveText: true, restoreEnclosedWhite: { maxDist: 40 } },
+  "ゴブリン_1": { preserveText: true, restoreEnclosedWhite: { maxDist: 40 }, whiteHoleMaxSize: 600 },
+  "ゴブリン_2": { preserveText: true, restoreEnclosedWhite: { maxDist: 40 }, whiteHoleMaxSize: 600 },
   // 新規シート (2026-05): 白背景 + テキストを含むものは preserveText で text crisp 化
   "Slackでもつかえそう": { preserveText: true },
   "Slackでもつかえそう２": { preserveText: true },
@@ -388,7 +391,13 @@ function removeEdgeFragments(data, w, h, maxFragmentRatio = 0.15, ignoreLargestN
 // cropData: 元 crop の RGBA。指定があればこちらの RGB を使って孔を埋める
 // (rembg は透過ピクセルの RGB を (0,0,0) に置換するため、そのまま alpha=255 に
 //  すると孔が「黒塗り」で出てしまう)。
-function fillInteriorHoles(data, w, h, maxHoleSize = 800, cropData = null) {
+// whiteHoleMaxSize: crop が大半 (>= 90%) 白系の「孔」について別途の小さい閾値。
+// 指定するとこのサイズ超の白孔は埋めない (キャラの脚の隙間に閉じ込められた bg-white、
+// 水面・吹き出し内側の白等の「白残り」が浮き上がるのを防ぐ)。null/未指定なら無効
+// (= 通常の maxHoleSize ルールのみ)。
+// 目の白・歯の白等の小さい白は引き続き埋まる。大きい白の塗りつぶし (belly/シャツ等)
+// は restoreEnclosedWhite が 4 方向 anchor 検査で個別ピクセル単位に復元できる。
+function fillInteriorHoles(data, w, h, maxHoleSize = 800, cropData = null, whiteHoleMaxSize = null) {
   const total = w * h;
   const reachable = new Uint8Array(total);
   let stack = [];
@@ -437,17 +446,26 @@ function fillInteriorHoles(data, w, h, maxHoleSize = 800, cropData = null) {
         bfs.push(ni);
       }
     }
-    if (hole.length <= maxHoleSize) {
+    if (hole.length > maxHoleSize) continue;
+    // 「ほぼ白い」孔判定: crop の near-white (R,G,B >= 230) ピクセル比 >= 90%。
+    // whiteHoleMaxSize が指定されている時のみ判定。該当孔はその閾値超なら埋めない。
+    if (whiteHoleMaxSize != null && cropData) {
+      let whiteSample = 0;
       for (const idx of hole) {
         const di = idx * 4;
-        data[di + 3] = 255;
-        if (cropData) {
-          data[di]     = cropData[di];
-          data[di + 1] = cropData[di + 1];
-          data[di + 2] = cropData[di + 2];
-        }
-        filled++;
+        if (cropData[di] >= 230 && cropData[di + 1] >= 230 && cropData[di + 2] >= 230) whiteSample++;
       }
+      if (whiteSample / hole.length >= 0.9 && hole.length > whiteHoleMaxSize) continue;
+    }
+    for (const idx of hole) {
+      const di = idx * 4;
+      data[di + 3] = 255;
+      if (cropData) {
+        data[di]     = cropData[di];
+        data[di + 1] = cropData[di + 1];
+        data[di + 2] = cropData[di + 2];
+      }
+      filled++;
     }
   }
   return filled;
@@ -601,7 +619,7 @@ async function finalizeSticker(srcPath, dstPath, opts, cropPath) {
     const cfg = opts.keepOnlyNearAnchors === true ? {} : opts.keepOnlyNearAnchors;
     keepOnlyNearAnchors(data, cropData, info.width, info.height, cfg.maxDist ?? 12);
   }
-  if (fillHoles) fillInteriorHoles(data, info.width, info.height, 800, cropData);
+  if (fillHoles) fillInteriorHoles(data, info.width, info.height, 800, cropData, opts.whiteHoleMaxSize ?? null);
   if (opts.restoreEnclosedWhite && cropData) {
     const cfg = opts.restoreEnclosedWhite === true ? {} : opts.restoreEnclosedWhite;
     restoreEnclosedWhite(
@@ -645,22 +663,32 @@ async function finalizeOpaque(srcPath, dstPath) {
 
 await mkdir(DST, { recursive: true });
 const subdirs = (await readdir(SRC, { withFileTypes: true })).filter(d => d.isDirectory());
+// CLI フィルタ: 引数で指定したシート名 (basename) のみ処理する。引数なしなら全件。
+// --skip-rembg: rembg を再実行せず、キャッシュされた .cache/rembg を使って finalize だけ走らせる。
+const cliArgs = process.argv.slice(2);
+const skipRembg = cliArgs.includes("--skip-rembg");
+const onlySheets = new Set(cliArgs.filter(a => !a.startsWith("--")));
 let total = 0;
 for (const d of subdirs) {
   if (COMPLETE_SHEETS.has(d.name)) {
     console.log(`${d.name}: SKIP (complete)`);
     continue;
   }
+  if (onlySheets.size > 0 && !onlySheets.has(d.name)) continue;
   const opts = { ...DEFAULT_OPTS, ...(SHEET_OPTS[d.name] || {}) };
   const inDir = path.join(SRC, d.name);
   const outDir = path.join(DST, d.name);
   await mkdir(outDir, { recursive: true });
 
   if (opts.engine === "ai") {
-    process.stdout.write(`${d.name}: rembg(${opts.model})... `);
-    const t0 = Date.now();
-    await rembgSheet(d.name, opts.model);
-    process.stdout.write(`${((Date.now() - t0) / 1000).toFixed(1)}s, finalizing... `);
+    if (skipRembg) {
+      process.stdout.write(`${d.name}: rembg(SKIPPED), finalizing... `);
+    } else {
+      process.stdout.write(`${d.name}: rembg(${opts.model})... `);
+      const t0 = Date.now();
+      await rembgSheet(d.name, opts.model);
+      process.stdout.write(`${((Date.now() - t0) / 1000).toFixed(1)}s, finalizing... `);
+    }
   } else {
     process.stdout.write(`${d.name}: ${opts.engine}, finalizing... `);
   }
