@@ -51,10 +51,13 @@ const SHEET_OPTS = {
   // 新規シート (2026-05): 白背景 + テキストを含むものは preserveText で text crisp 化
   "Slackでもつかえそう": { preserveText: true },
   "Slackでもつかえそう２": { preserveText: true },
-  "うざサラリーマン": { preserveText: true },
-  "おどるサラリーマン": { preserveText: true },
-  "にちゃりサラリーマン_1": { preserveText: true },
-  "にちゃりサラリーマン_2": { preserveText: true },
+  // 実写・イラスト系サラリーマン: 白シャツが rembg に「背景」と誤判定されて透過化
+  // される現象が頻発。restoreEnclosedWhite で「anchor (skin/tie/pants 等の dark/sat)
+  // に 4 方向囲まれた白ピクセル」を強制復元。
+  "うざサラリーマン":       { preserveText: true, restoreEnclosedWhite: { maxDist: 60 } },
+  "おどるサラリーマン":     { preserveText: true, restoreEnclosedWhite: { maxDist: 60 } },
+  "にちゃりサラリーマン_1": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 } },
+  "にちゃりサラリーマン_2": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 } },
   // 必殺技: 暗背景 + ダメージ数字 + 必殺技イラスト。birefnet で本体抽出、テキスト保持。
   "必殺技": { engine: "ai", model: "birefnet-general", alphaT: 30, trimWhite: true, preserveText: true },
 };
@@ -251,6 +254,54 @@ function keepOnlyNearAnchors(data, cropData, w, h, maxDist = 12) {
     }
   }
   return dropped;
+}
+
+// 「白い服 / 白い小物」など、rembg が背景と誤判定して透過にした白ピクセルを
+// 救う処理。dark or saturated な anchor ピクセルが指定方向数以上から
+// maxDist ピクセル以内に存在する白ピクセル (= キャラの中に「囲まれた」白) を
+// 元 crop の RGB + opaque で復元する。
+// 引数:
+//   maxDist:      anchor までの最大距離 (px)
+//   requiredDirs: 4 方向 (上下左右) のうち何方向に anchor が必要か (デフォルト 4 = 全方向)
+//   whiteFloor:   元 crop の min(R,G,B) がこれ以上のピクセルだけ対象 (薄灰も拾うなら下げる)
+function restoreEnclosedWhite(data, cropData, w, h, maxDist = 24, requiredDirs = 4, whiteFloor = 200) {
+  if (!cropData) return 0;
+  const total = w * h;
+  // anchor: 元 crop が dark or saturated
+  const isAnchor = new Uint8Array(total);
+  for (let i = 0; i < total; i++) {
+    const ci = i * 4;
+    const cr = cropData[ci], cg = cropData[ci + 1], cb = cropData[ci + 2];
+    const maxC = Math.max(cr, cg, cb);
+    const minC = Math.min(cr, cg, cb);
+    if ((cr < 100 && cg < 100 && cb < 100) || (maxC - minC) > 40) isAnchor[i] = 1;
+  }
+  const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  let restored = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      if (data[i * 4 + 3] !== 0) continue; // 既に opaque はスキップ
+      const ci = i * 4;
+      const cr = cropData[ci], cg = cropData[ci + 1], cb = cropData[ci + 2];
+      if (Math.min(cr, cg, cb) < whiteFloor) continue; // 白系のみ対象
+      // 4 方向で anchor の存在を確認
+      let foundDirs = 0;
+      for (const [dx, dy] of dirs) {
+        for (let k = 1; k <= maxDist; k++) {
+          const nx = x + dx * k, ny = y + dy * k;
+          if (nx < 0 || nx >= w || ny < 0 || ny >= h) break;
+          if (isAnchor[ny * w + nx]) { foundDirs++; break; }
+        }
+      }
+      if (foundDirs >= requiredDirs) {
+        data[ci] = cr; data[ci + 1] = cg; data[ci + 2] = cb;
+        data[ci + 3] = 255;
+        restored++;
+      }
+    }
+  }
+  return restored;
 }
 
 // 外周に接していて、メイン本体より十分小さい連結成分 ("切れ端") を透過化する。
@@ -544,6 +595,15 @@ async function finalizeSticker(srcPath, dstPath, opts, cropPath) {
     keepOnlyNearAnchors(data, cropData, info.width, info.height, cfg.maxDist ?? 12);
   }
   if (fillHoles) fillInteriorHoles(data, info.width, info.height, 800, cropData);
+  if (opts.restoreEnclosedWhite && cropData) {
+    const cfg = opts.restoreEnclosedWhite === true ? {} : opts.restoreEnclosedWhite;
+    restoreEnclosedWhite(
+      data, cropData, info.width, info.height,
+      cfg.maxDist ?? 24,
+      cfg.requiredDirs ?? 4,
+      cfg.whiteFloor ?? 200,
+    );
+  }
   if (trimWhite) trimWhiteEdges(data, info.width, info.height, 0.1, 4, 4);
   if (opts.removeFragments) {
     const fc = opts.removeFragments === true ? {} : opts.removeFragments;
