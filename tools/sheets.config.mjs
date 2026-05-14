@@ -62,6 +62,20 @@ export const SHEETS = [
   // 残業ドラゴン_1/_2: 1536×1024 の 4 列 × 2 行 = 8 stickers の整然グリッド。
   { file: "残業ドラゴン_1.jpg",          cols: 4, rows: 2 },
   { file: "残業ドラゴン_2.jpg",          cols: 4, rows: 2 },
+
+  // 書道風キャプションスタンプ。白背景に黒/赤/金などの筆文字。auto-cells でレイアウト
+  // ばらつきに追従。
+  { file: "Slackでもつかえそう.jpg",     autoCells: "white-bg" },
+  { file: "Slackでもつかえそう２.jpg",   autoCells: "white-bg" },
+
+  // 実写系サラリーマン (うざい・おどる・にちゃり)。白背景 + 人物 + 側面キャプション。
+  { file: "うざサラリーマン.png",        autoCells: "white-bg" },
+  { file: "おどるサラリーマン.jpg",      autoCells: "white-bg" },
+  { file: "にちゃりサラリーマン_1.jpg",  autoCells: "white-bg" },
+  { file: "にちゃりサラリーマン_2.jpg",  autoCells: "white-bg" },
+
+  // 必殺技 (TCGカード風、12 枚 4×3): 暗背景にカード絵 + ダメージ数字。
+  { file: "必殺技.jpg",                  cols: 4, rows: 3 },
 ];
 
 import path from "node:path";

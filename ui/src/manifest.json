@@ -1,6 +1,81 @@
 {
   "sheets": [
     {
+      "name": "Slackでもつかえそう",
+      "stickers": [
+        "Slackでもつかえそう_01.png",
+        "Slackでもつかえそう_02.png",
+        "Slackでもつかえそう_03.png",
+        "Slackでもつかえそう_04.png",
+        "Slackでもつかえそう_05.png",
+        "Slackでもつかえそう_06.png",
+        "Slackでもつかえそう_07.png",
+        "Slackでもつかえそう_08.png"
+      ],
+      "main": "main.png",
+      "tab": "tab.png",
+      "source": "_source.jpg",
+      "complete": false
+    },
+    {
+      "name": "Slackでもつかえそう２",
+      "stickers": [
+        "Slackでもつかえそう２_01.png",
+        "Slackでもつかえそう２_02.png",
+        "Slackでもつかえそう２_03.png",
+        "Slackでもつかえそう２_04.png",
+        "Slackでもつかえそう２_05.png",
+        "Slackでもつかえそう２_06.png",
+        "Slackでもつかえそう２_07.png",
+        "Slackでもつかえそう２_08.png"
+      ],
+      "main": "main.png",
+      "tab": "tab.png",
+      "source": "_source.jpg",
+      "complete": false
+    },
+    {
+      "name": "うざサラリーマン",
+      "stickers": [
+        "うざサラリーマン_01.png",
+        "うざサラリーマン_02.png",
+        "うざサラリーマン_03.png",
+        "うざサラリーマン_04.png",
+        "うざサラリーマン_05.png",
+        "うざサラリーマン_06.png",
+        "うざサラリーマン_07.png",
+        "うざサラリーマン_08.png",
+        "うざサラリーマン_09.png",
+        "うざサラリーマン_10.png",
+        "うざサラリーマン_11.png",
+        "うざサラリーマン_12.png"
+      ],
+      "main": "main.png",
+      "tab": "tab.png",
+      "source": "_source.png",
+      "complete": false
+    },
+    {
+      "name": "おどるサラリーマン",
+      "stickers": [
+        "おどるサラリーマン_01.png",
+        "おどるサラリーマン_02.png",
+        "おどるサラリーマン_03.png",
+        "おどるサラリーマン_04.png",
+        "おどるサラリーマン_05.png",
+        "おどるサラリーマン_06.png",
+        "おどるサラリーマン_07.png",
+        "おどるサラリーマン_08.png",
+        "おどるサラリーマン_09.png",
+        "おどるサラリーマン_10.png",
+        "おどるサラリーマン_11.png"
+      ],
+      "main": "main.png",
+      "tab": "tab.png",
+      "source": "_source.jpg",
+      "complete": false
+    },
+    {
       "name": "きゃわいいタイガタウルス",
       "stickers": [
         "きゃわいいタイガタウルス_01.png",
@@ -27,6 +102,41 @@
       "main": "main.png",
       "tab": "tab.png",
       "source": "_source.png",
+      "complete": false
+    },
+    {
+      "name": "にちゃりサラリーマン_1",
+      "stickers": [
+        "にちゃりサラリーマン_1_01.png",
+        "にちゃりサラリーマン_1_02.png",
+        "にちゃりサラリーマン_1_03.png",
+        "にちゃりサラリーマン_1_04.png",
+        "にちゃりサラリーマン_1_05.png",
+        "にちゃりサラリーマン_1_06.png",
+        "にちゃりサラリーマン_1_07.png",
+        "にちゃりサラリーマン_1_08.png",
+        "にちゃりサラリーマン_1_09.png"
+      ],
+      "main": "main.png",
+      "tab": "tab.png",
+      "source": "_source.jpg",
+      "complete": false
+    },
+    {
+      "name": "にちゃりサラリーマン_2",
+      "stickers": [
+        "にちゃりサラリーマン_2_01.png",
+        "にちゃりサラリーマン_2_02.png",
+        "にちゃりサラリーマン_2_03.png",
+        "にちゃりサラリーマン_2_04.png",
+        "にちゃりサラリーマン_2_05.png",
+        "にちゃりサラリーマン_2_06.png",
+        "にちゃりサラリーマン_2_07.png",
+        "にちゃりサラリーマン_2_08.png"
+      ],
+      "main": "main.png",
+      "tab": "tab.png",
+      "source": "_source.jpg",
       "complete": false
     },
     {
@@ -302,6 +412,27 @@
         "下半身タイガー_2_14.png",
         "下半身タイガー_2_15.png",
         "下半身タイガー_2_16.png"
+      ],
+      "main": "main.png",
+      "tab": "tab.png",
+      "source": "_source.jpg",
+      "complete": false
+    },
+    {
+      "name": "必殺技",
+      "stickers": [
+        "必殺技_01.png",
+        "必殺技_02.png",
+        "必殺技_03.png",
+        "必殺技_04.png",
+        "必殺技_05.png",
+        "必殺技_06.png",
+        "必殺技_07.png",
+        "必殺技_08.png",
+        "必殺技_09.png",
+        "必殺技_10.png",
+        "必殺技_11.png",
+        "必殺技_12.png"
       ],
       "main": "main.png",
       "tab": "tab.png",

@@ -48,6 +48,15 @@ const SHEET_OPTS = {
   "ゴブリン_2": { preserveText: true },
   "下半身タイガー_1": { preserveText: true },
   "下半身タイガー_2": { preserveText: true },
+  // 新規シート (2026-05): 白背景 + テキストを含むものは preserveText で text crisp 化
+  "Slackでもつかえそう": { preserveText: true },
+  "Slackでもつかえそう２": { preserveText: true },
+  "うざサラリーマン": { preserveText: true },
+  "おどるサラリーマン": { preserveText: true },
+  "にちゃりサラリーマン_1": { preserveText: true },
+  "にちゃりサラリーマン_2": { preserveText: true },
+  // 必殺技: 暗背景 + ダメージ数字 + 必殺技イラスト。birefnet で本体抽出、テキスト保持。
+  "必殺技": { engine: "ai", model: "birefnet-general", alphaT: 30, trimWhite: true, preserveText: true },
 };
 // fillHoles はデフォルト ON。rembg が目・歯等の白部を抜く問題を防ぐ。
 // outline はデフォルト ON で白縁 4px。LINE のチャット背景に乗せた時の視認性向上と
