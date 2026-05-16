@@ -55,9 +55,11 @@ const SHEET_OPTS = {
   "タイガタウルス_2": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false, whiteHoleMaxSize: 600 },
   "下半身タイガー_1": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false, whiteHoleMaxSize: 600 },
   "下半身タイガー_2": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false, whiteHoleMaxSize: 600 },
-  // ゴブリン: 顕著な白部分は無いが、目の白・歯等の小さな白を保護。
-  "ゴブリン_1": { preserveText: true, restoreEnclosedWhite: { maxDist: 40 }, whiteHoleMaxSize: 600 },
-  "ゴブリン_2": { preserveText: true, restoreEnclosedWhite: { maxDist: 40 }, whiteHoleMaxSize: 600 },
+  // ゴブリン: 目の白・歯等の小さな白に加え、_2 の布団・タオル・毛布等の大きな白い
+  // 装備品を救う。maxDist 80 + requiredDirs 3 で、ファブリック内部の anchor が
+  // 疎な場所まで restore が届くようにする。
+  "ゴブリン_1": { preserveText: true, restoreEnclosedWhite: { maxDist: 80, requiredDirs: 3 }, whiteHoleMaxSize: 600 },
+  "ゴブリン_2": { preserveText: true, restoreEnclosedWhite: { maxDist: 80, requiredDirs: 3 }, whiteHoleMaxSize: 600 },
   // 新規シート (2026-05): 白背景 + テキストを含むものは preserveText で text crisp 化
   "Slackでもつかえそう": { preserveText: true },
   "Slackでもつかえそう２": { preserveText: true },
