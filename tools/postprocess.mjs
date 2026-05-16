@@ -477,9 +477,46 @@ function fillInteriorHoles(data, w, h, maxHoleSize = 800, cropData = null, white
 // キャラクターも文字も alpha が立っているピクセル群の集合体なので、両方に同じ縁取り
 // が掛かる。LINE スタンプは背景がチャット色 (青) の上に乗るため、白縁取りで視認性
 // アップ + キャラ周囲に「シール感」が出る。
-function addOutline(data, w, h, thickness, color) {
+//
+// gapScan: 別 component の outline と merge して「白い帯」になる pixel を回避する
+// ためのスキャン半径 (Manhattan)。指定すると、各 outline candidate について自分の
+// 最近接 component とは異なる component の opaque ピクセルが gapScan 以内に居るか
+// 走査し、居る場合は outline を打たない (= 透過のまま残す)。
+// 推奨値 = 2 * thickness。gap が 2*thickness 以下の隙間では outline が完全に消え、
+// それ以上の隙間では outline が少し短くなって中央に透明帯が出来る。
+function addOutline(data, w, h, thickness, color, gapScan = null) {
   const total = w * h;
+
+  // 1. 不透明ピクセルの連結成分ラベル。
+  const componentId = new Int32Array(total);
+  let numComps = 0;
+  if (gapScan != null) {
+    for (let i = 0; i < total; i++) {
+      if (componentId[i] !== 0 || data[i * 4 + 3] === 0) continue;
+      numComps++;
+      componentId[i] = numComps;
+      const stack = [i];
+      while (stack.length) {
+        const idx = stack.pop();
+        const y = (idx / w) | 0;
+        const x = idx - y * w;
+        const ns = [
+          x > 0 ? idx - 1 : -1,
+          x < w - 1 ? idx + 1 : -1,
+          y > 0 ? idx - w : -1,
+          y < h - 1 ? idx + w : -1,
+        ];
+        for (const ni of ns) {
+          if (ni < 0 || componentId[ni] !== 0 || data[ni * 4 + 3] === 0) continue;
+          componentId[ni] = numComps;
+          stack.push(ni);
+        }
+      }
+    }
+  }
+
   const dist = new Int32Array(total).fill(-1);
+  const srcComp = gapScan != null ? new Int32Array(total) : null;
   const queue = [];
   // 透過ピクセルが「不透明ピクセル」と直接隣接していたら距離 1
   for (let y = 0; y < h; y++) {
@@ -488,12 +525,14 @@ function addOutline(data, w, h, thickness, color) {
       if (data[i * 4 + 3] > 0) continue; // 既に opaque はスキップ
       // 上下左右に opaque があれば seed
       let isEdge = false;
-      if (x > 0 && data[(i - 1) * 4 + 3] > 0) isEdge = true;
-      else if (x < w - 1 && data[(i + 1) * 4 + 3] > 0) isEdge = true;
-      else if (y > 0 && data[(i - w) * 4 + 3] > 0) isEdge = true;
-      else if (y < h - 1 && data[(i + w) * 4 + 3] > 0) isEdge = true;
+      let nearOpaque = -1;
+      if (x > 0 && data[(i - 1) * 4 + 3] > 0) { isEdge = true; nearOpaque = i - 1; }
+      else if (x < w - 1 && data[(i + 1) * 4 + 3] > 0) { isEdge = true; nearOpaque = i + 1; }
+      else if (y > 0 && data[(i - w) * 4 + 3] > 0) { isEdge = true; nearOpaque = i - w; }
+      else if (y < h - 1 && data[(i + w) * 4 + 3] > 0) { isEdge = true; nearOpaque = i + w; }
       if (isEdge) {
         dist[i] = 1;
+        if (srcComp) srcComp[i] = componentId[nearOpaque];
         queue.push(i);
       }
     }
@@ -517,13 +556,37 @@ function addOutline(data, w, h, thickness, color) {
       if (dist[ni] >= 0) continue;
       if (data[ni * 4 + 3] > 0) continue;
       dist[ni] = d + 1;
+      if (srcComp) srcComp[ni] = srcComp[i];
       queue.push(ni);
     }
   }
-  // 拡張ピクセルを color で塗りつぶす
+  // gapScan: 各 outline candidate で「別 component の opaque が gapScan 以内」を判定
+  const isGap = gapScan != null ? new Uint8Array(total) : null;
+  if (isGap) {
+    for (let i = 0; i < total; i++) {
+      if (dist[i] <= 0 || dist[i] > thickness) continue;
+      const myComp = srcComp[i];
+      const y = (i / w) | 0;
+      const x = i - y * w;
+      const maxR = gapScan;
+      let found = false;
+      // L1 (Manhattan) スキャン
+      for (let dy = -maxR; dy <= maxR && !found; dy++) {
+        const dxR = maxR - Math.abs(dy);
+        for (let dx = -dxR; dx <= dxR; dx++) {
+          const nx = x + dx, ny = y + dy;
+          if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+          const ni = ny * w + nx;
+          if (data[ni * 4 + 3] > 0 && componentId[ni] !== myComp) { found = true; break; }
+        }
+      }
+      if (found) isGap[i] = 1;
+    }
+  }
+  // 拡張ピクセルを color で塗りつぶす (gap pixel はスキップ)
   const [cr, cg, cb] = color;
   for (let i = 0; i < total; i++) {
-    if (dist[i] > 0) {
+    if (dist[i] > 0 && (!isGap || !isGap[i])) {
       data[i * 4] = cr;
       data[i * 4 + 1] = cg;
       data[i * 4 + 2] = cb;
@@ -644,7 +707,10 @@ async function finalizeSticker(srcPath, dstPath, opts, cropPath) {
     const cfg = outline === true ? {} : outline;
     const thickness = cfg.thickness ?? 4;
     const color = cfg.color ?? [255, 255, 255];
-    addOutline(data, info.width, info.height, thickness, color);
+    // gapScan: default = 2*thickness。別 component 同士の outline が merge して
+    // 「白い帯」になるのを回避。null/0 で無効化。
+    const gapScan = cfg.gapScan === undefined ? thickness * 2 : cfg.gapScan;
+    addOutline(data, info.width, info.height, thickness, color, gapScan || null);
   }
   const buf = await sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } })
     .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 }, threshold: 1 })
