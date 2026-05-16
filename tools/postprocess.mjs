@@ -55,11 +55,9 @@ const SHEET_OPTS = {
   "タイガタウルス_2": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false, whiteHoleMaxSize: 600 },
   "下半身タイガー_1": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false, whiteHoleMaxSize: 600 },
   "下半身タイガー_2": { preserveText: true, restoreEnclosedWhite: { maxDist: 60 }, keepOnlyNearAnchors: false, whiteHoleMaxSize: 600 },
-  // ゴブリン: 目の白・歯等の小さな白に加え、_2 の布団・タオル・毛布等の大きな白い
-  // 装備品を救う。maxDist 80 + requiredDirs 3 で、ファブリック内部の anchor が
-  // 疎な場所まで restore が届くようにする。
-  "ゴブリン_1": { preserveText: true, restoreEnclosedWhite: { maxDist: 80, requiredDirs: 3 }, whiteHoleMaxSize: 600 },
-  "ゴブリン_2": { preserveText: true, restoreEnclosedWhite: { maxDist: 80, requiredDirs: 3 }, whiteHoleMaxSize: 600 },
+  // ゴブリン: 顕著な白部分は無いが、目の白・歯等の小さな白を保護。
+  "ゴブリン_1": { preserveText: true, restoreEnclosedWhite: { maxDist: 40 }, whiteHoleMaxSize: 600 },
+  "ゴブリン_2": { preserveText: true, restoreEnclosedWhite: { maxDist: 40 }, whiteHoleMaxSize: 600 },
   // 新規シート (2026-05): 白背景 + テキストを含むものは preserveText で text crisp 化
   "Slackでもつかえそう": { preserveText: true },
   "Slackでもつかえそう２": { preserveText: true },
@@ -276,7 +274,11 @@ function keepOnlyNearAnchors(data, cropData, w, h, maxDist = 12) {
 //   maxDist:      anchor までの最大距離 (px)
 //   requiredDirs: 4 方向 (上下左右) のうち何方向に anchor が必要か (デフォルト 4 = 全方向)
 //   whiteFloor:   元 crop の min(R,G,B) がこれ以上のピクセルだけ対象 (薄灰も拾うなら下げる)
-function restoreEnclosedWhite(data, cropData, w, h, maxDist = 24, requiredDirs = 4, whiteFloor = 200) {
+//   minRegionSize: 元 crop の連結 white 領域 (4-conn) のサイズがこれ以上の領域のみ
+//                  復元対象。布団・タオル等の大きい白を救い、テキスト文字内側等の
+//                  小さい白 (~50-200 px) を取りこぼさず除外できる。デフォルト 0
+//                  (= サイズ制限なし、既存挙動)。
+function restoreEnclosedWhite(data, cropData, w, h, maxDist = 24, requiredDirs = 4, whiteFloor = 200, minRegionSize = 0) {
   if (!cropData) return 0;
   const total = w * h;
   // anchor: 元 crop が dark or saturated
@@ -288,6 +290,40 @@ function restoreEnclosedWhite(data, cropData, w, h, maxDist = 24, requiredDirs =
     const minC = Math.min(cr, cg, cb);
     if ((cr < 100 && cg < 100 && cb < 100) || (maxC - minC) > 40) isAnchor[i] = 1;
   }
+
+  // minRegionSize が指定されていれば、crop の white 連結成分にラベルを付け、
+  // 小さい成分のピクセルを復元対象から除外する。
+  let bigRegion = null;
+  if (minRegionSize > 0) {
+    const isWhite = (i) => {
+      const ci = i * 4;
+      return cropData[ci] >= whiteFloor && cropData[ci+1] >= whiteFloor && cropData[ci+2] >= whiteFloor;
+    };
+    const label = new Int32Array(total);
+    const sizes = [0];
+    let nid = 1;
+    for (let i = 0; i < total; i++) {
+      if (label[i] !== 0 || !isWhite(i)) continue;
+      const stack = [i]; label[i] = nid;
+      let size = 0;
+      while (stack.length) {
+        const idx = stack.pop(); size++;
+        const y = (idx / w) | 0; const x = idx - y * w;
+        const ns = [x>0?idx-1:-1, x<w-1?idx+1:-1, y>0?idx-w:-1, y<h-1?idx+w:-1];
+        for (const ni of ns) {
+          if (ni < 0 || label[ni] !== 0 || !isWhite(ni)) continue;
+          label[ni] = nid; stack.push(ni);
+        }
+      }
+      sizes.push(size);
+      nid++;
+    }
+    bigRegion = new Uint8Array(total);
+    for (let i = 0; i < total; i++) {
+      if (label[i] !== 0 && sizes[label[i]] >= minRegionSize) bigRegion[i] = 1;
+    }
+  }
+
   const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
   let restored = 0;
   for (let y = 0; y < h; y++) {
@@ -297,6 +333,7 @@ function restoreEnclosedWhite(data, cropData, w, h, maxDist = 24, requiredDirs =
       const ci = i * 4;
       const cr = cropData[ci], cg = cropData[ci + 1], cb = cropData[ci + 2];
       if (Math.min(cr, cg, cb) < whiteFloor) continue; // 白系のみ対象
+      if (bigRegion && !bigRegion[i]) continue; // 小領域はスキップ
       // 4 方向で anchor の存在を確認
       let foundDirs = 0;
       for (const [dx, dy] of dirs) {
@@ -692,6 +729,7 @@ async function finalizeSticker(srcPath, dstPath, opts, cropPath) {
       cfg.maxDist ?? 24,
       cfg.requiredDirs ?? 4,
       cfg.whiteFloor ?? 200,
+      cfg.minRegionSize ?? 0,
     );
   }
   if (trimWhite) trimWhiteEdges(data, info.width, info.height, 0.1, 4, 4);
