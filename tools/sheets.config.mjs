@@ -78,10 +78,17 @@ export const SHEETS = [
   { file: "必殺技.jpg",                  cols: 4, rows: 3 },
 
   // サラリーマン続編 (2026-05 追加): 白背景 + 人物 + 側面キャプション。
-  { file: "サラリーマンの日常.png",          autoCells: "white-bg" },
-  { file: "サラリーマンの日常リアル.png",    autoCells: "white-bg" },
-  { file: "サラリーマンの日常リアル_2.png",  autoCells: "white-bg" },
-  { file: "サラリーマンの日常リアル_3.png",  autoCells: "white-bg" },
+  // リアル_7 はリアル_6 と md5 完全一致 (重複アップロード) のためスキップ。
+  // autoCells だと cell 内の text-char gap (~10-20 px) と cell 間 gap (~30-60 px)
+  // が重なるレイアウト (特に bottom row) で誤分割するため、明示的に cols/rows を
+  // 指定する。
+  { file: "サラリーマンの日常.png",          cols: 4, rows: 2 },
+  { file: "サラリーマンの日常リアル.png",    cols: 3, rows: 3 },
+  { file: "サラリーマンの日常リアル_2.png",  cols: 4, rows: 3 },
+  { file: "サラリーマンの日常リアル_3.png",  cols: 5, rows: 4 },
+  { file: "サラリーマンの日常リアル_4.png",  cols: 5, rows: 4 },
+  { file: "サラリーマンの日常リアル_5.png",  cols: 5, rows: 4 },
+  { file: "サラリーマンの日常リアル_6.png",  cols: 5, rows: 4 },
 ];
 
 import path from "node:path";
