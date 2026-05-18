@@ -68,6 +68,10 @@ const SHEET_OPTS = {
   "おどるサラリーマン":     { model: "u2net_human_seg", preserveText: true, keepOnlyNearAnchors: false },
   "にちゃりサラリーマン_1": { model: "u2net_human_seg", preserveText: true, keepOnlyNearAnchors: false },
   "にちゃりサラリーマン_2": { model: "u2net_human_seg", preserveText: true, keepOnlyNearAnchors: false },
+  "サラリーマンの日常":         { model: "u2net_human_seg", preserveText: true, keepOnlyNearAnchors: false },
+  "サラリーマンの日常リアル":   { model: "u2net_human_seg", preserveText: true, keepOnlyNearAnchors: false },
+  "サラリーマンの日常リアル_2": { model: "u2net_human_seg", preserveText: true, keepOnlyNearAnchors: false },
+  "サラリーマンの日常リアル_3": { model: "u2net_human_seg", preserveText: true, keepOnlyNearAnchors: false },
   // 必殺技: 暗背景 + ダメージ数字 + 必殺技イラスト。birefnet で本体抽出、テキスト保持。
   "必殺技": { engine: "ai", model: "birefnet-general", alphaT: 30, trimWhite: true, preserveText: true },
 };

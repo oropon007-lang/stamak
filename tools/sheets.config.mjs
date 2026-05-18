@@ -76,6 +76,12 @@ export const SHEETS = [
 
   // 必殺技 (TCGカード風、12 枚 4×3): 暗背景にカード絵 + ダメージ数字。
   { file: "必殺技.jpg",                  cols: 4, rows: 3 },
+
+  // サラリーマン続編 (2026-05 追加): 白背景 + 人物 + 側面キャプション。
+  { file: "サラリーマンの日常.png",          autoCells: "white-bg" },
+  { file: "サラリーマンの日常リアル.png",    autoCells: "white-bg" },
+  { file: "サラリーマンの日常リアル_2.png",  autoCells: "white-bg" },
+  { file: "サラリーマンの日常リアル_3.png",  autoCells: "white-bg" },
 ];
 
 import path from "node:path";
